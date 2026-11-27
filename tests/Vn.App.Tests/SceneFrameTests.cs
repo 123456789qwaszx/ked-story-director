@@ -29,16 +29,19 @@ public sealed class SceneFrameTests
         Assert.Contains("장면 opening ⌄", SceneLabels(graph));
         Assert.Contains("장면 classroom ⌄", SceneLabels(graph));
 
-        // 챕터 프레임과 같은 규율 — 카드보다 앞 인덱스(= 뒤에 깔림)다.
+        // 장면 영역(테두리)은 챕터 프레임과 같은 규율 — 카드보다 앞 인덱스(= 뒤에 깔림)다. 이름표는 판이 아니라 판 위의 화면 겹에 선다
+        // (design/board-zoom.md 4절 — 줄여도 겹치지 않는 자리를 화면 기준으로 찾는다).
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
-        Border label = canvas.Children.OfType<Border>().First(border =>
-            (border.Child as TextBlock)?.Text?.StartsWith("장면 ", StringComparison.Ordinal) == true);
+        Rect area = graph.SceneAreaOf("opening")!.Value;
+        Border frame = canvas.Children.OfType<Border>().First(border =>
+            border.Child is null && Canvas.GetLeft(border) == area.X && Canvas.GetTop(border) == area.Y);
         Border card = canvas.Children.OfType<Border>().First(border =>
             border.Tag is string tag && session.Project.FindNode(tag) is not null);
 
         Assert.True(
-            canvas.Children.IndexOf(label) < canvas.Children.IndexOf(card),
+            canvas.Children.IndexOf(frame) < canvas.Children.IndexOf(card),
             "장면 영역은 노드 카드 뒤에 깔려야 한다");
+        Assert.DoesNotContain(canvas.Children.OfType<Border>(), border => border.Tag as string == GraphEditorView.SceneLabelTag + "opening");
     });
 
     [Fact]
@@ -100,8 +103,8 @@ public sealed class SceneFrameTests
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static List<string> SceneLabels(GraphEditorView graph) =>
-        graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>()
-            .Select(border => (border.Child as TextBlock)?.Text)
+        graph.FindControl<Canvas>("FrameLabelLayer")!.Children.OfType<Border>()
+            .Select(border => (border.Child as Panel)?.Children.OfType<TextBlock>().FirstOrDefault()?.Text)   // 점 · 이름 줄(장면 색 1 ~ 3단계)
             .Where(text => text is not null && text.StartsWith("장면 ", StringComparison.Ordinal))
             .Select(text => text!)
             .ToList();

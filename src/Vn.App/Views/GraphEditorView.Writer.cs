@@ -7,6 +7,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
@@ -552,7 +553,7 @@ public partial class GraphEditorView
         return new Avalonia.Controls.Shapes.Path
         {
             Data = Geometry.Parse(lines.ToString()),
-            Stroke = Brushes.Black,
+            Stroke = Skin.IconInk.Brush(),
             StrokeThickness = 1.3,
             Width = 12,
             Height = 12,
@@ -565,6 +566,12 @@ public partial class GraphEditorView
     /// 붙든 채 초점을 받고 글이 모두 골라진다. Enter면 <paramref name="commit"/>이 적은 글을 받아 입히고 칸으로 초점을 돌려준다. Esc나 다른 데를 누르면 적던
     /// 것은 버리고 지금 값을 다시 보인다.
     /// </summary>
+    /// <summary>
+    /// 값 칸이 비었을 때 보이는 표 — 고른 카드들의 값이 섞였거나 입힐 곳이 없다(2026-11-26 — ⛔ 그 전에는 빈 알약으로 남아 고장 난 것처럼 보였다).
+    /// 칸의 글이 아니라 자리 글(PlaceholderText)이라, 눌러 바로 숫자를 적으면 된다.
+    /// </summary>
+    internal const string MixedValueMark = "—";
+
     private TextBox ValueEntry(double width, string tip, Action<string> commit)
     {
         var entry = new TextBox
@@ -577,6 +584,7 @@ public partial class GraphEditorView
             VerticalContentAlignment = VerticalAlignment.Center,
             TextAlignment = TextAlignment.Center,
             AcceptsReturn = false,
+            PlaceholderText = MixedValueMark,
             [ToolTip.TipProperty] = tip
         };
 
@@ -736,7 +744,7 @@ public partial class GraphEditorView
     private static Control LineSpacingIcon() => new Avalonia.Controls.Shapes.Path
     {
         Data = Geometry.Parse("M2.5,1.5 V11.5 M0.5,3.5 L2.5,1.5 L4.5,3.5 M0.5,9.5 L2.5,11.5 L4.5,9.5 M7,2.5 H13 M7,6.5 H13 M7,10.5 H13"),
-        Stroke = Brushes.Black,
+        Stroke = Skin.IconInk.Brush(),
         StrokeThickness = 1.1,
         StrokeLineCap = PenLineCap.Round,
         StrokeJoin = PenLineJoin.Round,
@@ -751,7 +759,7 @@ public partial class GraphEditorView
     private static Control MarkerIcon() => new Avalonia.Controls.Shapes.Path
     {
         Data = Geometry.Parse("M3,10 L8,3 L11,5.5 L6,12 L3,12 Z M8,3 L9.5,1 L12.5,3.5 L11,5.5"),
-        Stroke = Brushes.Black,
+        Stroke = Skin.IconInk.Brush(),
         StrokeThickness = 1.1,
         StrokeLineCap = PenLineCap.Round,
         StrokeJoin = PenLineJoin.Round,
@@ -760,7 +768,7 @@ public partial class GraphEditorView
         HorizontalAlignment = HorizontalAlignment.Center
     };
 
-    private static Border Separator() => new() { Width = 1, Margin = new Thickness(4, 2), Background = new SolidColorBrush(Color.FromArgb(0x33, 0x55, 0x55, 0x55)) };
+    private static Border Separator() => new() { Width = 1, Margin = new Thickness(4, 2), Background = Skin.Divider.Brush() };
 
     private Button FormatButton(string glyph, string tip, Action run)
     {
@@ -809,12 +817,16 @@ public partial class GraphEditorView
     internal ColorMenu ColorMenuOf(WriterStyleKind kind) => _colorMenus[kind];
 
     /// <summary>
-    /// 이 프로젝트에 쓴 색 — 서식의 글자색(화자 이름 색도 글자색이다 · WF-D15) 또는 바탕색(화자 이름 바탕색도 · WF-D22). 색 차림의 「이 프로젝트에 쓴 색」(WF-D14).
+    /// 이 프로젝트에 쓴 색 — 서식의 글자색(화자 이름 색도 글자색이다 · WF-D15) 또는 바탕색(화자 이름 바탕색도 · WF-D22), 그리고 장면 색으로 RGB를 고른 것(둘 다 ·
+    /// 2026-11-27 — <see cref="SceneColorMenu.Chooser"/>). 색 차림의 「이 프로젝트에 쓴 색」(WF-D14).
     /// </summary>
     internal static IEnumerable<WriterRgb> ProjectColors(StoryProject project, bool fill)
     {
         IEnumerable<WriterRgb> marks = WriterMarkMath.UsedColors(project.EnumerateNodes().OfType<DialogueNode>(), fill);
-        return marks.Concat(project.Speakers.Select(speaker => fill ? speaker.Fill : speaker.Color).OfType<WriterRgb>()).Distinct();
+        return marks
+            .Concat(project.Speakers.Select(speaker => fill ? speaker.Fill : speaker.Color).OfType<WriterRgb>())
+            .Concat(SceneColorMenu.UsedInProject(project))
+            .Distinct();
     }
 
     /// <summary>글자색 · 바탕색 — 단추 밑의 색 띠가 마지막에 쓴 색이고, 누르면 색 차림이 열린다(WF-D14).</summary>

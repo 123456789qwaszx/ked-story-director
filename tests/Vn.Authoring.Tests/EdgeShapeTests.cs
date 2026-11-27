@@ -209,6 +209,90 @@ public sealed class EdgeShapeTests
     }
 
     [Fact]
+    public void 접은_장면의_줄로_드는_길은_상자_왼쪽_바깥을_타고_입구로_옆에서_든다()
+    {
+        // 2026-11-27 소유자 — 줄의 왼쪽 점이 입구다. 칸(오른쪽 위 400)에서 내려와 상자 위(180)에서 왼쪽 바깥(88)으로 건너고, 줄 높이(264)에서 입구(100)로 든다.
+        var knob = new GraphPosition(400, 50);
+        var entry = new GraphPosition(100, 264);
+
+        ShapedEdge auto = EdgeShapeRouter.IntoSide(knob, entry, laneX: 88, crossY: 180, shape: null);
+
+        Assert.Equal(
+            [knob, new GraphPosition(400, 180), new GraphPosition(88, 180), new GraphPosition(88, 264), entry],
+            auto.Points);
+        Assert.Equal(new GraphPosition(88, 180), auto.Handle);
+        Assert.True(auto.FreeY);
+
+        // 손으로 민 만큼 세로 길과 건너는 줄이 움직인다 — 입구에는 늘 옆에서 든다.
+        ShapedEdge moved = EdgeShapeRouter.IntoSide(knob, entry, laneX: 88, crossY: 180, new EdgeShape(BendX: -20, BendY: 30));
+        Assert.Equal(new GraphPosition(68, 210), moved.Handle);
+        Assert.Equal(new GraphPosition(68, 264), moved.Points[^2]);
+        Assert.Equal(entry, moved.Points[^1]);
+
+        // 직선은 두 끝만 잇는다(사람이 고른 모양이다).
+        Assert.Equal([knob, entry], EdgeShapeRouter.IntoSide(knob, entry, 88, 180, new EdgeShape(Kind: EdgeShapeKind.Straight)).Points);
+    }
+
+    [Fact]
+    public void 선택지의_길은_칸_밑에서_내려가_도착_접점의_높이에서_건넌다()
+    {
+        // 2026-11-26 소유자 — 선택지 칸이 가로로 나란히 서고 선은 칸에서 아래로 나간다.
+        var knob = new GraphPosition(100, 50);
+        var junction = new GraphPosition(400, 300);
+
+        ShapedEdge auto = EdgeShapeRouter.Drop(knob, junction, shape: null);
+
+        // 자동 — 칸 바로 밑(100)을 타고 내려가 접점의 높이(300)에서 건넌다. 손잡이는 건너기 시작하는 모퉁이다.
+        Assert.Equal(
+            [
+                knob, new GraphPosition(100, 50 + EdgeShapeRouter.DropStep), new GraphPosition(100, 50 + EdgeShapeRouter.DropStep),
+                new GraphPosition(100, 300), new GraphPosition(400, 300), junction
+            ],
+            auto.Points);
+        Assert.Equal(new GraphPosition(100, 300), auto.Handle);
+        Assert.True(auto.FreeY);
+
+        // 건너는 줄을 올려 둔다(한 카드의 여러 길이 같은 높이에서 겹치지 않게) — 접점에는 위에서 곧게 든다.
+        ShapedEdge raised = EdgeShapeRouter.Drop(knob, junction, shape: null, rise: 16);
+        Assert.Equal(new GraphPosition(100, 284), raised.Handle);
+        Assert.Equal(new GraphPosition(400, 284), raised.Points[^2]);
+        Assert.Equal(junction, raised.Points[^1]);
+
+        // 세로 길을 다른 카드가 막으면 비켜 갈 자리(250)로 — 조금 내려온 자리에서 그 길까지 가로로 간다.
+        ShapedEdge around = EdgeShapeRouter.Drop(knob, junction, shape: null, rise: 0, detourX: 250);
+        Assert.Equal(new GraphPosition(100, 50 + EdgeShapeRouter.DropStep), around.Points[1]);
+        Assert.Equal(new GraphPosition(250, 50 + EdgeShapeRouter.DropStep), around.Points[2]);
+        Assert.Equal(new GraphPosition(250, 300), around.Handle);
+
+        // 손으로 민 만큼 세로 길과 건너는 줄이 움직인다.
+        ShapedEdge moved = EdgeShapeRouter.Drop(knob, junction, new EdgeShape(BendX: -20, BendY: -60));
+        Assert.Equal(new GraphPosition(80, 240), moved.Handle);
+        Assert.Equal(new GraphPosition(400, 240), moved.Points[^2]);
+    }
+
+    [Fact]
+    public void 선택지의_곡선은_아래로_나가_위에서_들고_직선은_두_끝만_잇는다()
+    {
+        var knob = new GraphPosition(100, 50);
+        var junction = new GraphPosition(400, 300);
+
+        ShapedEdge curve = EdgeShapeRouter.Drop(knob, junction, new EdgeShape(EdgeShapeKind.Curve));
+
+        // 두 끝의 방향이 세로다 — 칸에서 곧게 내려가고 접점에 곧게 든다.
+        Assert.Equal(7, curve.Points.Count);
+        Assert.Equal(knob, curve.Points[0]);
+        Assert.Equal(junction, curve.Points[^1]);
+        Assert.Equal(knob.X, curve.Points[1].X);
+        Assert.True(curve.Points[1].Y > knob.Y);
+        Assert.Equal(junction.X, curve.Points[5].X);
+        Assert.True(curve.Points[5].Y < junction.Y);
+
+        ShapedEdge line = EdgeShapeRouter.Drop(knob, junction, new EdgeShape(EdgeShapeKind.Straight), rise: 16, detourX: 250);
+        Assert.Equal([knob, junction], line.Points);
+        Assert.Null(line.Handle);
+    }
+
+    [Fact]
     public void 곡선은_손잡이를_지나고_가운데에서_꺾이지_않는다()
     {
         var from = new GraphPosition(0, 0);

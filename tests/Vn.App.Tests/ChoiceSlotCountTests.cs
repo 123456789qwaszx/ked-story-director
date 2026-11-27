@@ -190,10 +190,10 @@ public sealed class ChoiceSlotCountTests : IDisposable
             .Where(row => row.Tag is string tag && tag.StartsWith(episodeId + "#", StringComparison.Ordinal))
             .ToList();
 
-    /// <summary>그 에피소드의 선택지 칸에 선 문구들 — 위에서 아래 차례.</summary>
+    /// <summary>그 에피소드의 선택지 칸에 선 문구들 — 왼쪽에서 오른쪽 차례(칸은 카드 아래에 가로로 나란히 선다 · 2026-11-26).</summary>
     private static List<string> Labels(GraphEditorView graph, string episodeId) =>
         SlotRows(graph, episodeId)
-            .OrderBy(Canvas.GetTop)
+            .OrderBy(Canvas.GetLeft)
             .Select(row => row.Children.OfType<TextBlock>().First().Text ?? string.Empty)
             .ToList();
 

@@ -32,6 +32,26 @@
     <value>다시 켜면 {0}로 바뀝니다.</value>
     <comment>언어를 바꾼 뒤 칸 아래 · 상태줄. {0} = 바뀔 언어 이름.</comment>
   </data>
+  <data name="Settings_ThemeLabel" xml:space="preserve">
+    <value>테마</value>
+    <comment>설정 창 「기타」 — 테마 칸의 이름.</comment>
+  </data>
+  <data name="Settings_ThemeTip" xml:space="preserve">
+    <value>툴의 색 · 모양입니다 — 대사와 프로젝트 데이터는 바뀌지 않습니다. 바꾸면 다시 켤 때 바뀝니다.</value>
+    <comment>설정 창 테마 칸의 풍선.</comment>
+  </data>
+  <data name="Settings_ThemeRestart" xml:space="preserve">
+    <value>다시 켜면 「{0}」 테마로 바뀝니다.</value>
+    <comment>테마를 바꾼 뒤 칸 아래 · 상태줄. {0} = 바뀔 테마의 이름.</comment>
+  </data>
+  <data name="Theme_ClearSky" xml:space="preserve">
+    <value>맑은 하늘</value>
+    <comment>테마의 이름 — 설정 창 테마 칸(Theming/ThemeCatalog.cs).</comment>
+  </data>
+  <data name="Theme_Classic" xml:space="preserve">
+    <value>기본</value>
+    <comment>테마의 이름 — 0.5.0까지의 모양(Theming/ThemeCatalog.cs).</comment>
+  </data>
   <data name="Main_SelectNodeToEditIt" xml:space="preserve">
     <value>노드를 선택하면 여기서 편집합니다.</value>
     <comment>MainWindow.axaml.cs</comment>
@@ -102,14 +122,6 @@
   </data>
   <data name="Main_RemovedOldProgressionJSONSame" xml:space="preserve">
     <value> 옛 진행 JSON '{0}'은 걷었습니다(복제할 폴더의 같은 파일은 다음 저장 때 걷습니다).</value>
-    <comment>MainWindow.axaml.cs</comment>
-  </data>
-  <data name="Main_ChapterWillBeRemovedAlong" xml:space="preserve">
-    <value>챕터 「{0}」와 그 장면 · 에피소드 · [대본] 탭의 카드가 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
-    <comment>MainWindow.axaml.cs</comment>
-  </data>
-  <data name="Main_DeleteChapter" xml:space="preserve">
-    <value>챕터 지우기</value>
     <comment>MainWindow.axaml.cs</comment>
   </data>
   <data name="Main_DeletedChapterAndCardsIn" xml:space="preserve">
@@ -326,7 +338,7 @@
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_ChoiceLines" xml:space="preserve">
-    <value>선택지 선</value>
+    <value>기본 선택지 선</value>
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_Language" xml:space="preserve">
@@ -1072,6 +1084,18 @@
     <value>챕터 {0} ⌄</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
+  <data name="Board_ChapterFolded" xml:space="preserve">
+    <value>챕터 {0} ›</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FoldedChapterLabelTip" xml:space="preserve">
+    <value>누르면 이 챕터를 고릅니다 — 그대로 끌면 접힌 표째 움직입니다. 더블클릭하면 다시 펼칩니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FoldedSceneLabelTip" xml:space="preserve">
+    <value>누르면 이 장면을 고릅니다 — 그대로 끌면 접힌 상자째 움직입니다. 더블클릭하면 다시 펼칩니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
   <data name="Board_ClickToSelectEveryCard" xml:space="preserve">
     <value>누르면 이 챕터의 카드를 모두 고릅니다 — 그대로 끌면 함께 움직입니다. 더블클릭하면 표 형태로 접고, 접힌 표를 더블클릭하면 다시 펼칩니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
@@ -1272,10 +1296,6 @@
     <value>분기 조건 줄을 지켰습니다 — 조건 줄은 되살리고 바깥에 쓴 줄은 조건 안쪽으로 모았습니다. 이 카드에 들어갈 조건은 [구성] 탭의 분기 칸에서 바꿉니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
-  <data name="Board_FoldedNodes" xml:space="preserve">
-    <value>접힘 · {0}개 노드 · {1}</value>
-    <comment>GraphEditorView.axaml.cs</comment>
-  </data>
   <data name="Board_EmptyFile" xml:space="preserve">
     <value>빈 파일</value>
     <comment>GraphEditorView.axaml.cs</comment>
@@ -1432,10 +1452,6 @@
     <value> 문구 '{0}'은 칸에 남겨 뒀습니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
-  <data name="Board_ConditionRightClickToDelete" xml:space="preserve">
-    <value>{0} — 조건 '{1}' → {2} · 우클릭으로 삭제</value>
-    <comment>GraphEditorView.axaml.cs</comment>
-  </data>
   <data name="Board_CouldnTFindChapterTo" xml:space="preserve">
     <value>새 카드를 세울 챕터를 찾지 못했습니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
@@ -1450,10 +1466,6 @@
   </data>
   <data name="Board_AddedEpisodeToScene" xml:space="preserve">
     <value>장면 「{0}」에 에피소드를 더했습니다.</value>
-    <comment>GraphEditorView.axaml.cs</comment>
-  </data>
-  <data name="Board_IsEpisodeInChapterIts" xml:space="preserve">
-    <value>'{0}'은 챕터 '{1}'의 에피소드입니다. 간선·픽스처 참조까지 함께 지웁니다 — 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_DeleteEpisode2" xml:space="preserve">
@@ -1932,14 +1944,6 @@
     <value>화자</value>
     <comment>DialogueNodeEditor.axaml.cs</comment>
   </data>
-  <data name="Dialogue_ChooseFromRegisteredSpeakers" xml:space="preserve">
-    <value>등록된 화자 목록에서 선택</value>
-    <comment>DialogueNodeEditor.axaml.cs</comment>
-  </data>
-  <data name="Dialogue_NoSpeakersRegisteredAddSpeakers" xml:space="preserve">
-    <value>등록된 화자가 없습니다 — 오른쪽 「화자」 탭에서 화자를 더하면 여기 목록에 옵니다. 그때까지는 화자 칸에 직접 입력하세요.</value>
-    <comment>DialogueNodeEditor.axaml.cs</comment>
-  </data>
   <data name="Dialogue_UnknownCondition" xml:space="preserve">
     <value>알 수 없는 조건</value>
     <comment>DialogueNodeEditor.axaml.cs</comment>
@@ -2311,18 +2315,6 @@
   <data name="Side_Summary" xml:space="preserve">
     <value>요약</value>
     <comment>MainWindow.Hierarchy.cs</comment>
-  </data>
-  <data name="Side_EpisodesOfSceneAndBranch" xml:space="preserve">
-    <value>장면 「{0}」의 에피소드 {1}개와 그 에피소드가 부르던 분기 카드 {2}장이 [대본] 탭의 카드와 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
-    <comment>MainWindow.HierarchyEdit.cs</comment>
-  </data>
-  <data name="Side_EpisodesOfSceneWillBe" xml:space="preserve">
-    <value>장면 「{0}」의 에피소드 {1}개가 [대본] 탭의 카드와 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
-    <comment>MainWindow.HierarchyEdit.cs</comment>
-  </data>
-  <data name="Side_DeleteScene" xml:space="preserve">
-    <value>장면 지우기</value>
-    <comment>MainWindow.HierarchyEdit.cs</comment>
   </data>
   <data name="Side_DeletedSceneEpisodesBranchCards" xml:space="preserve">
     <value>장면 「{0}」를 지웠습니다 — 에피소드 {1}개, 분기 카드 {2}장. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
@@ -2725,7 +2717,7 @@
     <comment>MainWindow.Conditions.cs</comment>
   </data>
   <data name="Side_DeletesIfItSUsed" xml:space="preserve">
-    <value>'{0}'를 지웁니다 — 쓰는 곳이 있으면 어디인지 말하고 거절합니다.</value>
+    <value>'{0}'를 지웁니다 — 쓰는 곳이 있으면 어디인지 보여 주고 한 번 더 묻습니다.</value>
     <comment>MainWindow.Conditions.cs</comment>
   </data>
   <data name="Side_DeleteCondition" xml:space="preserve">
@@ -3883,7 +3875,7 @@
     <comment>ChapterGraphView.axaml</comment>
   </data>
   <data name="Structure_SetExpressionForEachCondition" xml:space="preserve">
-    <value>조건마다 식을 정합니다. 식은 `trust &gt;= 3`처럼 스탯 키와 정수를 비교합니다(&gt;= · &lt;= · &gt; · &lt; · ==). 여럿이면 `;`로 잇고, 모두 맞아야 통과합니다. 예/아니오 스탯은 `키 == true` · `키 == false`. 식이 비면 「식 미정」 — 항상 통과하고 검증 보고에 경고만 뜹니다. 표 아래 칸에 이름을 적고 [＋ 추가](또는 Enter)로 만들고, 식은 그 줄에서 채웁니다. 이름은 줄의 이름 칸에서 고칩니다 — 그 이름을 건 선택지가 따라갑니다. 지우는 것은 [대본] 탭에서 합니다. 고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다.</value>
+    <value>조건마다 식을 정합니다. 식은 `trust &gt;= 3`처럼 스탯 키와 정수를 비교합니다(&gt;= · &lt;= · &gt; · &lt; · ==). 여럿이면 `;`로 잇고, 모두 맞아야 통과합니다. 예/아니오 스탯은 `키 == true` · `키 == false`. 식이 비면 「식 미정」 — 항상 통과하고 검증 보고에 경고만 뜹니다. 표 아래 칸에 이름을 적고 [＋ 추가](또는 Enter)로 만들고, 식은 그 줄에서 채웁니다. 이름은 줄의 이름 칸에서 고칩니다 — 그 이름을 건 선택지가 따라갑니다. 지우는 것은 줄 끝 [✕]입니다 — 쓰는 곳이 있으면 어디인지 보이고 한 번 더 묻습니다. 고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다.</value>
     <comment>ChapterGraphView.axaml</comment>
   </data>
   <data name="Structure_Stats" xml:space="preserve">
@@ -4018,5 +4010,121 @@
   <data name="Side_UndoBringsAllBack" xml:space="preserve">
     <value>되돌리기(Ctrl+Z) 한 번이면 모두 돌아옵니다.</value>
     <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Confirm_DeleteEpisode" xml:space="preserve">
+    <value>「{0}」 에피소드를 정말 삭제하시겠습니까?</value>
+    <comment>[삭제] 뒤의 확인 칸 — {0} = 에피소드 제목</comment>
+  </data>
+  <data name="Confirm_DeleteScene" xml:space="preserve">
+    <value>「{0}」 장면을 정말 삭제하시겠습니까?</value>
+    <comment>[삭제] 뒤의 확인 칸 — {0} = 장면 이름</comment>
+  </data>
+  <data name="Confirm_DeleteChapter" xml:space="preserve">
+    <value>「{0}」 챕터를 정말 삭제하시겠습니까?</value>
+    <comment>[삭제] 뒤의 확인 칸 — {0} = 챕터 이름</comment>
+  </data>
+  <data name="Confirm_SceneTakesEpisodes" xml:space="preserve">
+    <value>에피소드 {0}개도 함께 지워집니다.</value>
+    <comment>장면 확인 칸의 둘째 줄</comment>
+  </data>
+  <data name="Confirm_SceneTakesEpisodesAndBranches" xml:space="preserve">
+    <value>에피소드 {0}개와 분기 카드 {1}장도 함께 지워집니다.</value>
+    <comment>장면 확인 칸의 둘째 줄 — 그 장면의 에피소드가 부르던 분기 카드가 있을 때</comment>
+  </data>
+  <data name="Confirm_ChapterTakesAll" xml:space="preserve">
+    <value>그 챕터의 장면과 에피소드도 모두 함께 지워집니다.</value>
+    <comment>챕터 확인 칸의 둘째 줄</comment>
+  </data>
+  <data name="Confirm_Cancel" xml:space="preserve">
+    <value>취소</value>
+    <comment>확인 칸의 [취소]</comment>
+  </data>
+  <data name="Structure_ExpressionExamples" xml:space="preserve">
+    <value>식 예시 보기</value>
+    <comment>ChapterGraphView.axaml.cs — [＋ 새 조건] 칸의 만들기 단추 오른쪽. 손을 올리면 이 챕터의 스탯으로 든 예시가 뜬다</comment>
+  </data>
+  <data name="Structure_DetachingSetsJustThat" xml:space="preserve">
+    <value>떼면 그 길의 표시조건 · 해금조건만 「없음」이 됩니다 — 길과 잠금 안내문은 그대로 남습니다. 되돌리기(Ctrl+Z) 한 번에 함께 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs — 쓰는 조건의 [✕] 확인 칸(길에서만 쓸 때)</comment>
+  </data>
+  <data name="Structure_ClearDialogueConditionsFirst" xml:space="preserve">
+    <value>대사 안의 조건 블록과 분기 카드의 첫머리 조건은 툴이 걷지 않습니다 — [대본] 탭에서 그 자리의 조건을 먼저 걷고 다시 지워 주세요.</value>
+    <comment>ChapterGraphView.axaml.cs — 쓰는 조건의 [✕] 확인 칸(대사 줄의 갈래가 쓸 때)</comment>
+  </data>
+  <data name="Structure_DetachAllAndDelete" xml:space="preserve">
+    <value>모두 떼고 지우기</value>
+    <comment>ChapterGraphView.axaml.cs — 쓰는 조건의 [✕] 확인 칸의 단추</comment>
+  </data>
+  <data name="Structure_DetachAndDeleteCondition" xml:space="preserve">
+    <value>조건 떼고 삭제</value>
+    <comment>ChapterGraphView.axaml.cs — 오류 상태줄의 말머리</comment>
+  </data>
+  <data name="Structure_DeletedConditionDetachedPaths" xml:space="preserve">
+    <value>조건 '{0}'{1} 지웠습니다 — 길 {2}개에서 뗐습니다. 되돌리기(Ctrl+Z)로 함께 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs — {1}은 조사(을/를)</comment>
+  </data>
+  <data name="SceneColor_Menu" xml:space="preserve">
+    <value>장면 색</value>
+    <comment>SceneColorMenu.cs — 하이어아키 장면 줄 우클릭 · 인스펙터 장면 요약의 머리</comment>
+  </data>
+  <data name="SceneColor_Auto" xml:space="preserve">
+    <value>자동</value>
+    <comment>MainWindow.SceneColors.cs — 인스펙터 장면 색 줄의 단추</comment>
+  </data>
+  <data name="SceneColor_AutoNow" xml:space="preserve">
+    <value>자동 (지금: {0})</value>
+    <comment>SceneColorMenu.cs — {0}은 지금 자동으로 고른 색 이름</comment>
+  </data>
+  <data name="SceneColor_1" xml:space="preserve">
+    <value>세이지</value>
+    <comment>SceneColorMenu.cs — 장면 색 1</comment>
+  </data>
+  <data name="SceneColor_2" xml:space="preserve">
+    <value>장미</value>
+    <comment>SceneColorMenu.cs — 장면 색 2</comment>
+  </data>
+  <data name="SceneColor_3" xml:space="preserve">
+    <value>민트</value>
+    <comment>SceneColorMenu.cs — 장면 색 3</comment>
+  </data>
+  <data name="SceneColor_4" xml:space="preserve">
+    <value>연두</value>
+    <comment>SceneColorMenu.cs — 장면 색 4</comment>
+  </data>
+  <data name="SceneColor_5" xml:space="preserve">
+    <value>라일락</value>
+    <comment>SceneColorMenu.cs — 장면 색 5</comment>
+  </data>
+  <data name="SceneColor_Set" xml:space="preserve">
+    <value>장면 '{0}'의 색을 {1}{2} 했습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>SceneColorMenu.cs — {2}는 조사(으로/로)</comment>
+  </data>
+  <data name="SceneColor_BackToAuto" xml:space="preserve">
+    <value>장면 '{0}'의 색을 자동으로 돌렸습니다.</value>
+    <comment>SceneColorMenu.cs</comment>
+  </data>
+  <data name="SceneColor_SetMany" xml:space="preserve">
+    <value>장면 {0}개의 색을 {1}{2} 했습니다. 되돌리기(Ctrl+Z) 한 번에 함께 돌아옵니다.</value>
+    <comment>SceneColorMenu.cs — {2}는 조사(으로/로)</comment>
+  </data>
+  <data name="SceneColor_ManyBackToAuto" xml:space="preserve">
+    <value>장면 {0}개의 색을 자동으로 돌렸습니다.</value>
+    <comment>SceneColorMenu.cs</comment>
+  </data>
+  <data name="SceneColor_ChooseRgb" xml:space="preserve">
+    <value>직접 고르기 (RGB)…</value>
+    <comment>SceneColorMenu.cs</comment>
+  </data>
+  <data name="SceneColor_ChooseRgbTip" xml:space="preserve">
+    <value>색 차림을 엽니다 — 정해 둔 색 · 이 프로젝트에 쓴 색 · 직접 고르기(RGB). 직접 고르기는 지금 장면 색에서 시작합니다. 판의 바탕은 고른 색을 옅게 비치게, 점 · 꼬리표는 고른 색으로 칠합니다(너무 옅거나 짙으면 글이 읽히게 툴이 맞춥니다).</value>
+    <comment>SceneColorMenu.cs</comment>
+  </data>
+  <data name="SceneColor_ChooserAutoTip" xml:space="preserve">
+    <value>고른 색을 걷고 자동 색으로 돌립니다.</value>
+    <comment>SceneColorMenu.cs</comment>
+  </data>
+  <data name="Board_AppliedToPickedCards" xml:space="preserve">
+    <value>고른 카드 {0}개에 함께 — {1}</value>
+    <comment>GraphEditorView.axaml.cs — 여러 카드를 고른 채 카드 머리의 단추를 눌렀을 때. {0} 카드 수 · {1} 한 카드의 알림</comment>
   </data>
 </root>

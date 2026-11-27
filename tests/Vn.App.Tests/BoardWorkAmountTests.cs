@@ -124,7 +124,8 @@ public sealed class BoardWorkAmountTests : IDisposable
 
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         Canvas canvas = graph.FindControl<Canvas>("GraphCanvas")!;
-        Border label = canvas.Children.OfType<Border>().Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + "opening");
+        Border label = graph.FindControl<Canvas>("FrameLabelLayer")!.Children.OfType<Border>()   // 이름표는 판 위의 화면 겹에 선다
+            .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + "opening");
         var top = (Visual)TopLevel.GetTopLevel(canvas)!;
         var pointer = new Pointer(0, PointerType.Mouse, true);
         Point at = label.TranslatePoint(new Point(4, 4), top)!.Value;

@@ -49,6 +49,23 @@ public sealed class BranchCardBoardTests : IDisposable
     });
 
     [Fact]
+    public void 분기_선은_판을_새로_지어도_장면_테두리_면_위에_깔려_곧바로_보인다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 「분기 연결선의 경우 안 보이는 버그가 있네요. 저 상태에서 약간 움직이면 그제서야 보입니다」. 선을 맨 앞(0)에 끼워 테두리
+        // 밑에 깔렸고, 불투명한 장면 면에 가려 이름표만 떴다.
+        (MainWindow window, AuthoringSession session, _, _) = Stage();
+        GraphEditorView graph = Graph(window);
+
+        graph.Rebuild();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(graph.EdgeCount > 0);
+        Assert.Equal(0, graph.EdgesUnderFrames);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 분기점을_에피소드에_놓으면_받지_않고_까닭을_말한다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, DialogueNode root, DialogueNode branch) = Stage();

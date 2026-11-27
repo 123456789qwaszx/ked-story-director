@@ -99,7 +99,7 @@ Everyday tasks
                           so they don't go into the game (people you work with can see them).
 · Speaker name color    — pick a color with the color button before a name in the "Speakers" tab, and that name shows in that color in the script.
                           The "A" button beside it is the name background — that color goes behind the name.
-· Make a fork           — click the gray "Empty choice" slot under a card, write the choice text,
+· Make a fork           — click the [+] of an empty slot under a card, write the choice text,
                           then drag its point onto the next episode's card (only within the same chapter ·
                           to another scene, only onto that scene's start ⌂ card).
                           You can connect first — drag a gray point without writing anything and it becomes

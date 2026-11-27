@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.App.Strings;
 
@@ -150,7 +151,7 @@ internal sealed class StatChangeEditor : StackPanel
             var add = new Button
             {
                 Content = Ui.Side_StatChange2,
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Padding = new Thickness(7, 1),
                 HorizontalAlignment = HorizontalAlignment.Left,
                 [ToolTip.TipProperty] =
@@ -181,8 +182,8 @@ internal sealed class StatChangeEditor : StackPanel
     private static TextBlock Hint(string text) => new()
     {
         Text = text,
-        FontSize = 10,
-        Opacity = 0.5,
+        FontSize = Skin.Font(10),
+        Opacity = Skin.Dim(0.5),
         TextWrapping = TextWrapping.Wrap
     };
 
@@ -195,7 +196,7 @@ internal sealed class StatChangeEditor : StackPanel
 
         var statCombo = new ComboBox
         {
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             ItemsSource = _stats.Select(Display).ToList(),
             SelectedItem = stat is null ? null : Display(stat),
@@ -233,7 +234,7 @@ internal sealed class StatChangeEditor : StackPanel
         // bool 스탯은 부호가 곧 활성/비활성이다 — `+1`이라 적어 두면 무슨 뜻인지 알 수 없다(2026-11-19 소유자 · usability UX11 · ⛔ 「켬」 · 「끔」).
         var signCombo = new ComboBox
         {
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             MinWidth = isBool ? 84 : 54,
             Margin = new Thickness(4, 0, 0, 0),
             ItemsSource = isBool ? new[] { Ui.Side_On2, Ui.Side_Off2 } : ["＋", "－"],
@@ -251,7 +252,7 @@ internal sealed class StatChangeEditor : StackPanel
 
         var amountBox = new TextBox
         {
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Width = 56,
             Margin = new Thickness(4, 0, 0, 0),
             IsVisible = !isBool,
@@ -283,7 +284,7 @@ internal sealed class StatChangeEditor : StackPanel
         var remove = new Button
         {
             Content = "✕",
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Padding = new Thickness(5, 1),
             Margin = new Thickness(4, 0, 0, 0),
             [ToolTip.TipProperty] = Ui.Side_DeletesThisRow

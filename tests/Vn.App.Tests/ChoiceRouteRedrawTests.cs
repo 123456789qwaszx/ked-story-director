@@ -31,6 +31,25 @@ public sealed class ChoiceRouteRedrawTests : IDisposable
     }
 
     [Fact]
+    public void 도착_접점과_화살촉은_들어오는_선과_한_색이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 — 들어오는 선은 길 색인데 카드 위의 화살촉은 회색, 접점은 또 다른 색(선택지 글 색)이라 셋이 달랐다.
+        (MainWindow window, AuthoringSession session, GraphEditorView graph) = Open();
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "간다");
+        Dispatcher.UIThread.RunJobs();
+
+        Polygon arrow = graph.RailVisuals.OfType<Polygon>().Single();
+        Avalonia.Media.Color ink = ((Avalonia.Media.ISolidColorBrush)arrow.Fill!).Color;
+        Assert.NotEqual(Vn.App.Theming.Skin.Rail, ink);   // 철도 색(회색)이 아니라
+        Assert.Contains(graph.RailVisuals.OfType<Avalonia.Controls.Shapes.Path>(),   // 들어오는 선의 색이다
+            lane => lane.Stroke is Avalonia.Media.ISolidColorBrush brush && brush.Color == ink);
+        Assert.Contains(graph.RailVisuals.OfType<Ellipse>(),                          // 접점도
+            port => port.Fill is Avalonia.Media.ISolidColorBrush brush && brush.Color == ink);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 다른_카드로_옮겨_이으면_그_출발의_선만_긋고_옛_도착_포트는_내리고_새_포트를_세운다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, GraphEditorView graph) = Open();

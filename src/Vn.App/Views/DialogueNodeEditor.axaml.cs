@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
@@ -29,7 +30,10 @@ namespace Vn.App.Views;
 /// </summary>
 public partial class DialogueNodeEditor : UserControl
 {
-    private static readonly SolidColorBrush LineSelectionBrush = new(Color.FromArgb(200, 37, 99, 235));
+    private static IBrush LineSelectionBrush => Skin.Selection.Brush(200);
+
+    /// <summary>고른 줄의 면 — 하이어아키의 고른 줄과 같은 색이다(<see cref="Skin.RowSelected"/>).</summary>
+    private static IBrush LineSelectionFill => Skin.RowSelected.Brush();
 
     private AuthoringSession? _session;
     private string? _nodeId;
@@ -44,6 +48,9 @@ public partial class DialogueNodeEditor : UserControl
 
     /// <summary>줄마다의 화자 칸 — 줄을 더하면 새 줄의 이 칸으로 초점을 옮긴다(<see cref="FocusLineLater"/>).</summary>
     private readonly Dictionary<string, AutoCompleteBox> _speakerBoxes = new(StringComparer.Ordinal);
+
+    /// <summary>줄마다의 대사 칸 — 줄의 빈 곳을 누르면 그 줄의 이 칸으로 초점을 옮긴다(<see cref="FocusLineText"/>).</summary>
+    private readonly Dictionary<string, TextBox> _textBoxes = new(StringComparer.Ordinal);
 
     /// <summary>다시 세운 뒤 초점을 옮길 줄 — 줄을 더한 직후 셸이 표를 다시 세우므로 그 뒤에 새 칸을 찾는다.</summary>
     private string? _focusLineId;
@@ -70,6 +77,24 @@ public partial class DialogueNodeEditor : UserControl
         InitializeComponent();
 
         NameBox.LostFocus += (_, _) => CommitName();
+
+        // 줄의 칸(화자 · 대사)에 초점이 들어오면 그 줄이 「쓰고 있는 줄」이다 — 그 줄을 고르고(왼쪽 띠 · [줄 추가]의 자리) 셸에 알린다(판의 카드 왼쪽에 표시).
+        // 초점이 줄 표를 떠나면 걷는다. 다른 줄의 칸으로 옮기면 들어온 쪽이 먼저 알린다.
+        LineHost.GotFocus += (_, args) => UiGuard.Run(_session, Ui.Dialogue_Dialogue, () =>
+        {
+            if (LineOf(args.Source as Visual) is { } lineId)
+            {
+                SelectLine(lineId);
+                SetEditingLine(lineId);
+            }
+        });
+        LineHost.LostFocus += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (!LineHost.IsKeyboardFocusWithin)
+            {
+                SetEditingLine(null);
+            }
+        });
 
         // 하이어아키에서 여러 줄을 골랐으면 그 에피소드 카드 모두를 한 번에 켜고 끈다(2026-11-23 소유자 — 「선택 된것들 모두 일괄적으로 키고 꺼지도록」).
         // 섞여 있으면(일부만 켜짐) 체크가 반쯤이고, 누르면 모두 켠다.
@@ -139,7 +164,7 @@ public partial class DialogueNodeEditor : UserControl
         var add = new Button
         {
             Content = Ui.Dialogue_AddLineAtEnd,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(10, 4),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Left,
@@ -157,7 +182,7 @@ public partial class DialogueNodeEditor : UserControl
         panel.Children.Add(new Button
         {
             Content = Ui.Board_Delete,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(10, 4),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Left,
@@ -248,12 +273,61 @@ public partial class DialogueNodeEditor : UserControl
     private static string HideEmptyTip =>
         Ui.Dialogue_WhenOnOnlyChoicesConnected;
 
+    /// <summary>
+    /// 인스펙터에서 지금 쓰고 있는 줄이 바뀌었다 — (노드, 줄). 줄의 칸(화자 · 대사)에 초점이 있는 동안 그 줄이고, 초점이 줄 표를 떠나면 (null, null)이다.
+    /// 셸이 [대본] 판의 그 카드 왼쪽에 표시한다(2026-11-26 소유자 — 「인스펙터에서 대사를 수정할 때 … 노드 왼쪽으로 현재 수정 중인 줄을 화살표로든 혹은
+    /// 파란색 막대로든 표시」 · <see cref="GraphEditorView.ShowEditingLine"/>).
+    /// </summary>
+    internal event Action<string?, string?>? EditingLineChanged;
+
+    private string? _editingLineId;
+
+    /// <summary>지금 쓰고 있는 줄 — 시험의 손잡이.</summary>
+    internal string? EditingLineId => _editingLineId;
+
+    private void SetEditingLine(string? lineId)
+    {
+        if (string.Equals(_editingLineId, lineId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _editingLineId = lineId;
+        EditingLineChanged?.Invoke(lineId is null ? null : _nodeId, lineId);
+    }
+
+    /// <summary>그 칸이 든 줄 — 줄을 감싼 띠(<see cref="WrapForLineSelection"/>)를 거슬러 찾는다. 줄 밖(조건 · 고아 카드)이면 null.</summary>
+    private string? LineOf(Visual? source)
+    {
+        foreach (Visual at in source?.GetSelfAndVisualAncestors() ?? [])
+        {
+            if (ReferenceEquals(at, LineHost))
+            {
+                return null;
+            }
+
+            if (at is Border wrapper)
+            {
+                foreach ((string lineId, Border card) in _lineCards)
+                {
+                    if (ReferenceEquals(card, wrapper))
+                    {
+                        return lineId;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>어떤 노드를 편집할지 정하고 화면을 만든다.</summary>
     internal void Show(string? nodeId)
     {
         if (!string.Equals(_nodeId, nodeId, StringComparison.Ordinal))
         {
             _selectedLineId = null;
+            SetEditingLine(null);
         }
 
         _nodeId = nodeId;
@@ -299,6 +373,7 @@ public partial class DialogueNodeEditor : UserControl
             LineHost.Children.Clear();
             _lineCards.Clear();
             _speakerBoxes.Clear();
+            _textBoxes.Clear();
 
             // 분기로 다녀오는 카드의 첫머리 조건 묶음도 그 분기의 색이다 — 판의 분기 선 · 카드 표와 같은 번호로 칠한다.
             _entryGate = BranchEntryCondition.EntryPalette(_session.Project, node.Id) is { } gatePalette &&
@@ -340,7 +415,7 @@ public partial class DialogueNodeEditor : UserControl
                 LineHost.Children.Add(new TextBlock
                 {
                     Text = Ui.Dialogue_PressAddLineToStart,
-                    Opacity = 0.6,
+                    Opacity = Skin.Dim(0.6),
                     TextWrapping = TextWrapping.Wrap
                 });
             }
@@ -361,7 +436,8 @@ public partial class DialogueNodeEditor : UserControl
         {
             // Transparent는 보이지 않지만 히트테스트는 된다 — 배경 없는 일반 대사 카드의
             // 빈 부분을 클릭해도 선택이 되게 한다(글자 위만 반응하지 않도록).
-            Background = Brushes.Transparent,
+            // 고른 줄은 윈도우의 목록처럼 옅은 파랑 면에 왼쪽 강조색 띠다(2026-11-26 소유자 — 고른 것의 시각 언어를 윈도우 문법으로).
+            Background = string.Equals(lineId, _selectedLineId, StringComparison.Ordinal) ? LineSelectionFill : Brushes.Transparent,
             BorderThickness = new Thickness(3, 0, 0, 0),
             BorderBrush = string.Equals(lineId, _selectedLineId, StringComparison.Ordinal)
                 ? LineSelectionBrush
@@ -370,11 +446,24 @@ public partial class DialogueNodeEditor : UserControl
             Child = card
         };
 
+        // 줄의 표(테마가 고른 줄 · 마우스를 올린 줄에만 「화자」 자리 글과 [+]를 보이는 손잡이 — Themes/*/Controls.axaml · 2026-11-26 디자인 점검 6번).
+        wrapper.Classes.Add(LineRowClass);
+        wrapper.Classes.Set(PickedLineClass, string.Equals(lineId, _selectedLineId, StringComparison.Ordinal));
+
         wrapper.AddHandler(
             PointerPressedEvent,
             (_, args) =>
             {
                 SelectLine(lineId);
+
+                // 줄의 빈 곳(번호 · 칸 사이)을 누르면 그 줄의 대사 칸으로 초점이 간다 — 안 그러면 앞서 쓰던 다른 줄의 칸이 초점을 쥔 채 커서가 깜빡여, 고른
+                // 줄과 쓰는 줄이 갈렸다(2026-11-27 소유자 — 「다른 줄을 클릭했는데도, 여전히 화자칸이 열린채 깜빡이는」). 칸 · 단추를 누르면 그것이 초점을 갖는다.
+                if (args.GetCurrentPoint(wrapper).Properties.IsLeftButtonPressed &&
+                    !wrapper.IsKeyboardFocusWithin &&
+                    !PressedOnFocusable(args.Source as Visual, wrapper))
+                {
+                    FocusLineText(lineId);
+                }
 
                 // 우클릭 = 줄 추가/삭제 바로가기 — ＋ 플라이아웃을 거치지 않는 짧은 길.
                 // 텍스트 입력 칸 위에서는 비켜선다 —잘라내기/복사/붙여넣기 기본
@@ -397,7 +486,7 @@ public partial class DialogueNodeEditor : UserControl
     {
         Height = 1,
         Margin = new Thickness(4, 2),
-        Background = new SolidColorBrush(Color.FromArgb(60, 128, 128, 128))
+        Background = Skin.Hairline.Brush(60)
     };
 
     /// <summary>줄 카드 우클릭 메뉴 —추가·삭제는 ＋ 플라이아웃과 같은 편집 경로 하나를 쓴다.</summary>
@@ -417,7 +506,7 @@ public partial class DialogueNodeEditor : UserControl
             var button = new Button
             {
                 Content = label,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 Padding = new Thickness(10, 4),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
@@ -459,6 +548,82 @@ public partial class DialogueNodeEditor : UserControl
         flyout.ShowAt(anchor, showAtPointer: true);
     }
 
+    /// <summary>고른 줄(파란 띠) — 시험의 손잡이.</summary>
+    internal string? SelectedLineId => _selectedLineId;
+
+    /// <summary>
+    /// [대본] 판의 카드 글 칸에서 커서가 선 줄을 고른 줄로 삼는다(2026-11-26 소유자 — 「그래프 뷰에서 특정 줄을 수정하는데, 그것과 별개로 우측 인스펙터에서는
+    /// 다른 줄을 파랗게 강조하니 되게 헷갈립니다 … 동기화」 · <see cref="GraphEditorView.CaretLineChanged"/>). 파란 띠가 그 줄로 옮기고, 그 줄이 보이게
+    /// 줄 표를 내린다. 초점은 가져가지 않는다. 다른 노드를 보고 있거나 인스펙터의 줄 칸에서 쓰는 중이면 하지 않는다 — 사람이 쓰는 칸이 먼저다.
+    /// 이미 고른 줄이어도 보이게는 한다 — 카드 글 칸에 다시 들어왔을 때 그 줄이 줄 표 밖에 있을 수 있다.
+    /// </summary>
+    internal void FollowCaretLine(string nodeId, string lineId)
+    {
+        if (!string.Equals(_nodeId, nodeId, StringComparison.Ordinal) || LineHost.IsKeyboardFocusWithin)
+        {
+            return;
+        }
+
+        SelectLine(lineId);
+        BringLineIntoViewLater(lineId);
+    }
+
+    /// <summary>줄 표를 그 줄이 보이게 내릴 줄 — 배치가 끝난 뒤에 내린다(<see cref="BringLineIntoViewLater"/>).</summary>
+    private string? _scrollLineId;
+
+    /// <summary>
+    /// 그 줄이 보이게 줄 표를 내린다 — <b>배치가 끝난 뒤에</b>(2026-11-26 소유자 — 「처음 에피소드 노드 내부의 특정 줄을 처음 클릭했을 때 … 강조자체는 제대로
+    /// 되는데 그 줄로 바로 이동하는게 안 되는 경우」). 카드 글 칸을 처음 누르면 그 카드가 골라지며 줄 표를 새로 세우는데, 막 세운 줄은 아직 자리가 없어 곧바로
+    /// 내리면 아무 일도 없었다. 그 사이에 줄 표를 또 세웠으면 그때의 줄을 찾는다. 여러 번 부르면 마지막 줄이다.
+    /// </summary>
+    private void BringLineIntoViewLater(string lineId)
+    {
+        _scrollLineId = lineId;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (_scrollLineId is not { } pending)
+            {
+                return;
+            }
+
+            _scrollLineId = null;
+
+            if (_lineCards.TryGetValue(pending, out Border? card) && card.IsAttachedToVisualTree())
+            {
+                card.BringIntoView();
+            }
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    /// <summary>누른 자리가 초점을 받는 것(대사 · 화자 칸 · 단추) 안인가 — 줄(<paramref name="row"/>) 안에서만 본다.</summary>
+    private static bool PressedOnFocusable(Visual? source, Visual row)
+    {
+        foreach (Visual at in source?.GetSelfAndVisualAncestors() ?? [])
+        {
+            if (ReferenceEquals(at, row))
+            {
+                return false;
+            }
+
+            if (at is Avalonia.Input.InputElement { Focusable: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>그 줄의 대사 칸으로 초점을 옮기고 커서를 글 끝에 둔다.</summary>
+    private void FocusLineText(string lineId)
+    {
+        if (_textBoxes.TryGetValue(lineId, out TextBox? box) && box.IsAttachedToVisualTree())
+        {
+            box.Focus(Avalonia.Input.NavigationMethod.Pointer);
+            box.CaretIndex = box.Text?.Length ?? 0;
+        }
+    }
+
     private void SelectLine(string lineId)
     {
         if (string.Equals(_selectedLineId, lineId, StringComparison.Ordinal))
@@ -470,11 +635,24 @@ public partial class DialogueNodeEditor : UserControl
 
         foreach ((string cardLineId, Border card) in _lineCards)
         {
-            card.BorderBrush = string.Equals(cardLineId, lineId, StringComparison.Ordinal)
-                ? LineSelectionBrush
-                : Brushes.Transparent;
+            bool picked = string.Equals(cardLineId, lineId, StringComparison.Ordinal);
+            card.BorderBrush = picked ? LineSelectionBrush : Brushes.Transparent;
+            card.Background = picked ? LineSelectionFill : Brushes.Transparent;
+            card.Classes.Set(PickedLineClass, picked);
         }
     }
+
+    /// <summary>줄 표의 한 줄(고름 띠)의 클래스 — 테마의 손잡이다.</summary>
+    internal const string LineRowClass = "line-row";
+
+    /// <summary>고른 줄의 클래스 — 테마의 손잡이다.</summary>
+    internal const string PickedLineClass = "picked";
+
+    /// <summary>줄마다의 화자 칸 · [+]의 클래스 — 테마가 고른 줄 · 마우스를 올린 줄에만 보인다(「맑은 하늘」).</summary>
+    internal const string LineSpeakerClass = "line-speaker";
+
+    /// <inheritdoc cref="LineSpeakerClass"/>
+    internal const string LineAddClass = "line-add";
 
     // ── 대본 ────────────────────────────────────────────────────────────────
 
@@ -561,11 +739,12 @@ public partial class DialogueNodeEditor : UserControl
             Margin = new Thickness(resolved.Depth * 20, 0, 0, 0),
             Padding = new Thickness(6, 3),
             CornerRadius = new CornerRadius(4),
-            BorderThickness = branch is null
-                ? new Thickness(1)
-                : new Thickness(3, 1, 1, 1),
+            // 줄마다 상자를 두르거나(기본 테마), 줄 아래 구분선만 둔다(Skin.LineRowBoxed · themes) — 조건 안의 줄은 어느 쪽이든 왼쪽 색 막대가 선다.
+            BorderThickness = Skin.LineRowBoxed > 0
+                ? (branch is null ? new Thickness(1) : new Thickness(3, 1, 1, 1))
+                : new Thickness(branch is null ? 0 : 3, 0, 0, 1),
             BorderBrush = branch is null
-                ? new SolidColorBrush(Color.FromArgb(60, 128, 128, 128))
+                ? Skin.Hairline.Brush(60)
                 : BranchPalette.Accent(palette),
             Background = branch is null ? null : BranchPalette.Background(palette),
             Child = body
@@ -583,9 +762,9 @@ public partial class DialogueNodeEditor : UserControl
 
         var index = new TextBlock
         {
-            Text = resolved.Index.ToString(),
-            FontSize = 10,
-            Opacity = 0.45,
+            Text = (resolved.Index + 1).ToString(),   // 사람이 세는 번호 — 1부터(2026-11-26 — 디자인 점검 6번 · 「n번째 줄」 알림과 같다 · ⛔ 0부터)
+            FontSize = Skin.Font(10),
+            Opacity = Skin.Dim(0.45),
             VerticalAlignment = VerticalAlignment.Center
         };
         row.Children.Add(index);
@@ -596,8 +775,8 @@ public partial class DialogueNodeEditor : UserControl
             Text = speaker.Length > 0 ? $"{speaker}: {resolved.Line.Text}" : resolved.Line.Text,
             TextDecorations = TextDecorations.Strikethrough,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            FontSize = 12,
-            Opacity = 0.55,
+            FontSize = Skin.Font(12),
+            Opacity = Skin.Dim(0.55),
             MinHeight = 26,
             Padding = new Thickness(6, 5),
             Margin = new Thickness(4, 0, 0, 0),
@@ -609,7 +788,7 @@ public partial class DialogueNodeEditor : UserControl
         var chip = new TextBlock
         {
             Text = Ui.Dialogue_PendingRemoval,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Foreground = PendingRemovalBrush,
             Margin = new Thickness(6, 0, 2, 0),
             VerticalAlignment = VerticalAlignment.Center
@@ -635,31 +814,36 @@ public partial class DialogueNodeEditor : UserControl
     /// <summary>지울 줄 카드의 표 — 시험이 찾는다.</summary>
     internal const string PendingRemovalTag = "pending-removal";
 
-    private static readonly IBrush PendingRemovalBrush = new SolidColorBrush(Color.FromArgb(170, 0xDC, 0x26, 0x26));
+    private static IBrush PendingRemovalBrush => Skin.Danger.Brush(170);
 
-    /// <summary>Index | 화자 | 대사 | ＋ 의 메인 행. 높이는 한 줄로 고정이다.</summary>
+    /// <summary>
+    /// Index | 화자 | 대사 | ＋ 의 메인 행. 긴 대사는 칸 안에서 아래로 줄을 바꾸며 행이 그만큼 높아진다 — 번호 · 화자 · ＋는 첫 줄에 맞춰 위에 선다
+    /// (2026-11-26 소유자 — 「줄의 뒷부분이 화면 바깥으로 넘어가면 아예 안 보이는데 … 아래쪽으로 줄바꿈하면서 보여주는 게 맞겠습니다」 · ⛔ 그 전에는 한 줄로
+    /// 고정하고 칸 안에서 가로로 흘렀다).
+    /// </summary>
     private Control BuildMainRow(DialogueNode node, DialogueScript script, ResolvedLine resolved)
     {
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions(RowColumns) };
 
         var index = new TextBlock
         {
-            Text = resolved.Index.ToString(),
-            FontSize = 10,
-            Opacity = 0.45,
-            VerticalAlignment = VerticalAlignment.Center
+            Text = (resolved.Index + 1).ToString(),   // 사람이 세는 번호 — 1부터(2026-11-26 — 디자인 점검 6번 · 「n번째 줄」 알림과 같다 · ⛔ 0부터)
+            FontSize = Skin.Font(10),
+            Opacity = Skin.Dim(0.45),
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 6, 0, 0)
         };
         Grid.SetColumn(index, 0);
         row.Children.Add(index);
 
-        // 긴 대사가 카드 높이를 늘리지 않는다 — 칸 안에서 가로로 흐른다.
+        // 긴 대사는 칸 안에서 아래로 줄을 바꾼다 — 칸(과 행)이 그만큼 높아진다. Enter는 줄을 넣지 않는다(한 줄 = 대사 하나).
         var text = new TextBox
         {
             Text = resolved.Line.Text,
             PlaceholderText = Ui.Dialogue_Dialogue,
             AcceptsReturn = false,
-            TextWrapping = TextWrapping.NoWrap,
-            FontSize = 12,
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = Skin.Font(12),
             MinHeight = 26,
             Padding = new Thickness(6, 3),
             VerticalContentAlignment = VerticalAlignment.Center,
@@ -727,9 +911,10 @@ public partial class DialogueNodeEditor : UserControl
             {
                 Text = resolved.Line.Speaker,
                 PlaceholderText = Ui.Dialogue_Speaker,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 MinHeight = 26,
                 ItemsSource = SpeakerNames(),
+                Classes = { LineSpeakerClass }
             };
             Wire(speaker);
             _speakerBoxes[resolved.Line.LineId] = speaker;
@@ -738,94 +923,26 @@ public partial class DialogueNodeEditor : UserControl
             // 지금 화자 목록에서 — 방금 등록한 화자도 카드를 다시 짓지 않고 나온다.
             SpeakerSuggest.Attach(speaker, SpeakerNames);
 
-            // ▾ = 등록 화자 전체 목록 — 자동완성은 타이핑해야 열리니 클릭 한 번 길을 따로 둔다.
-            AutoCompleteBox speakerBox = speaker;
-            var pick = new Button
-            {
-                Content = "▾",
-                FontSize = 8,
-                Padding = new Thickness(3, 0),
-                MinWidth = 16,
-                VerticalAlignment = VerticalAlignment.Stretch,
-                Margin = new Thickness(1, 0, 0, 0)
-            };
-            ToolTip.SetTip(pick, Ui.Dialogue_ChooseFromRegisteredSpeakers);
-            pick.Click += (_, _) => ShowSpeakerFlyout(pick, speakerBox, Commit);
-
-            var speakerCell = new Grid
-            {
-                ColumnDefinitions = new ColumnDefinitions("*,Auto"),
-                Margin = new Thickness(4, 0, 0, 0)
-            };
-            Grid.SetColumn(speaker, 0);
-            Grid.SetColumn(pick, 1);
-            speakerCell.Children.Add(speaker);
-            speakerCell.Children.Add(pick);
-            Grid.SetColumn(speakerCell, 1);
-            row.Children.Add(speakerCell);
+            // ⛔ 옆의 ▾(등록 화자 전체 목록 — 누르면 이름 목록이 떴다)는 2026-11-26에 걷었다(소유자 — 「인스펙터에서 등록된 화자 목록 드롭다운은 필요가
+            //    없을 것 같습니다」). 등록 화자는 칸에 적기 시작하면 후보로 뜬다(SpeakerSuggest).
+            speaker.Margin = new Thickness(4, 0, 0, 0);
+            speaker.VerticalAlignment = VerticalAlignment.Top;
+            Grid.SetColumn(speaker, 1);
+            row.Children.Add(speaker);
         }
 
         Wire(text);
+        _textBoxes[resolved.Line.LineId] = text;
         Grid.SetColumn(text, 2);
         row.Children.Add(text);
 
         Button plus = BuildPlusButton(node, resolved);
+        plus.VerticalAlignment = VerticalAlignment.Top;
+        plus.Margin = new Thickness(plus.Margin.Left, 3, plus.Margin.Right, 0);
         Grid.SetColumn(plus, 3);
         row.Children.Add(plus);
 
         return row;
-    }
-
-    /// <summary>
-    /// 등록 화자 드롭다운. 항목 클릭 = 그 이름이 화자 칸에 들어간다 —
-    /// TextChanged가 대본에 반영하므로 자유 입력과 같은 길 하나를 쓴다.
-    /// </summary>
-    /// <param name="commit">
-    /// 고른 이름을 실제로 내는 손. <b>있어야 한다</b> — ▾로 고르는 길에는 초점이 오간 적이 없어서,
-    /// 초점에 기대는 저장만으로는 고른 이름이 칸에만 앉아 있다가 다음 다시 그리기에 지워진다.
-    /// </param>
-    private void ShowSpeakerFlyout(Button anchor, AutoCompleteBox speaker, Action commit)
-    {
-        List<string> candidates = SpeakerNames();
-
-        if (candidates.Count == 0)
-        {
-            _session!.SetStatus(
-                Ui.Dialogue_NoSpeakersRegisteredAddSpeakers);
-            return;
-        }
-
-        var panel = new StackPanel();
-        var flyout = new Flyout
-        {
-            Content = new ScrollViewer { MaxHeight = 260, Content = panel },
-            Placement = PlacementMode.Bottom
-        };
-
-        // 머리글이 없다 — 원천이 하나라 구역을 가를 것이 없고, 머리글은 이름 목록 위에 붙는
-        // 상표일 뿐이다.
-        foreach (string name in candidates)
-        {
-            var item = new Button
-            {
-                Content = name,
-                FontSize = 11,
-                Padding = new Thickness(10, 4),
-                MinWidth = 140,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Left,
-                Background = Brushes.Transparent
-            };
-            item.Click += (_, _) =>
-            {
-                speaker.Text = name;
-                flyout.Hide();
-                commit();
-            };
-            panel.Children.Add(item);
-        }
-
-        flyout.ShowAt(anchor);
     }
 
     /// <summary>
@@ -870,9 +987,9 @@ public partial class DialogueNodeEditor : UserControl
             Child = new TextBlock
             {
                 Text = text,
-                FontSize = 9,
+                FontSize = Skin.Font(9),
                 FontWeight = FontWeight.Bold,
-                Foreground = Brushes.White
+                Foreground = Skin.OnAccent.Brush()
             },
             Background = background,
             Padding = new Thickness(6, 1),
@@ -903,7 +1020,7 @@ public partial class DialogueNodeEditor : UserControl
     /// </summary>
     private Control BuildTransitionTag(DialogueNode node, ResolvedLine resolved)
     {
-        var neutral = new SolidColorBrush(Color.FromArgb(160, 107, 114, 128));
+        IBrush neutral = Skin.Neutral.Brush(160);
 
         (string label, IBrush background) = resolved.Line.Transition!.Kind switch
         {
@@ -977,7 +1094,7 @@ public partial class DialogueNodeEditor : UserControl
         head.Children.Add(new TextBlock
         {
             Text = (count > 1 ? string.Format(Ui.Dialogue_BranchPoint, order + 1, count) : Ui.Dialogue_BranchPoint2) + Ui.Dialogue_NotConnected,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             FontWeight = FontWeight.Bold,
             Foreground = BranchPalette.Accent(palette),
             VerticalAlignment = VerticalAlignment.Center
@@ -1005,8 +1122,8 @@ public partial class DialogueNodeEditor : UserControl
                     new TextBlock
                     {
                         Text = Ui.Dialogue_ThereSNowhereToVisit,
-                        FontSize = 10,
-                        Opacity = 0.7,
+                        FontSize = Skin.Font(10),
+                        Opacity = Skin.Dim(0.7),
                         TextWrapping = TextWrapping.Wrap,
                         Margin = new Thickness(0, 2, 0, 0)
                     }
@@ -1058,7 +1175,7 @@ public partial class DialogueNodeEditor : UserControl
         {
             // 여럿이면 차례를 붙인다 — 위에서부터 다녀온다.
             Text = count > 1 ? string.Format(Ui.Dialogue_ConditionalBranch, order + 1, count) : Ui.Dialogue_ConditionalBranch2,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             FontWeight = FontWeight.Bold,
             Foreground = BranchPalette.Accent(palette),
             VerticalAlignment = VerticalAlignment.Center
@@ -1067,8 +1184,8 @@ public partial class DialogueNodeEditor : UserControl
         row.Children.Add(new TextBlock
         {
             Text = $"→ {name}",
-            FontSize = 11,
-            Opacity = 0.8,
+            FontSize = Skin.Font(11),
+            Opacity = Skin.Dim(0.8),
             VerticalAlignment = VerticalAlignment.Center
         });
 
@@ -1080,8 +1197,8 @@ public partial class DialogueNodeEditor : UserControl
             Text = BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, targetId, state.Label)) + " " + (lastConnected
                 ? Ui.Dialogue_VisitsThenContinuesFromThis
                 : Ui.Dialogue_VisitsThenGoesToNext),
-            FontSize = 10,
-            Opacity = 0.7,
+            FontSize = Skin.Font(10),
+            Opacity = Skin.Dim(0.7),
             TextWrapping = TextWrapping.Wrap
         });
 
@@ -1131,6 +1248,7 @@ public partial class DialogueNodeEditor : UserControl
         BranchConditionHost.Children.Clear();
         BranchConditionHost.IsVisible =
             _session is not null && node.IsBranchCard;
+        RemeasureUpward(BranchConditionHost);
 
         if (_session is null || !BranchConditionHost.IsVisible)
         {
@@ -1145,7 +1263,7 @@ public partial class DialogueNodeEditor : UserControl
         row.Children.Add(new TextBlock
         {
             Text = Ui.Dialogue_Condition,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             FontWeight = FontWeight.SemiBold,
             Margin = new Thickness(0, 0, 8, 0),
             VerticalAlignment = VerticalAlignment.Center
@@ -1158,12 +1276,35 @@ public partial class DialogueNodeEditor : UserControl
         {
             Text = BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, node.Id, state.Label)) +
                    Ui.Dialogue_BranchIsAlwaysVisitedAnd,
-            FontSize = 10,
-            Opacity = 0.7,
+            FontSize = Skin.Font(10),
+            Opacity = Skin.Dim(0.7),
             TextWrapping = TextWrapping.Wrap
         });
     }
 
+
+    /// <summary>
+    /// 그 칸부터 이 편집기까지 다시 재고 다시 자리 잡게 한다(2026-11-27 소유자 — 분기 카드를 고르면 「종종」 조건 칸의 설명 · [줄 추가] 줄이 위로 밀려 조건 칸에
+    /// 겹쳤다). <b>원인</b>(실제 앱을 가상 화면에 띄워 재현하고 배치 값을 찍어 확인): 「일반 에피소드 카드 → 장면 영역 → 분기 카드」에서만 난다. 에피소드 카드는
+    /// 조건 칸이 없어 위쪽 칸(이름 · 조건이 든 Grid의 첫 줄)이 높이 53으로 자리 잡는다 → 장면 영역을 누르면 장면 요약이 서고 이 편집기는 숨는다 → 분기 카드를
+    /// 누르면 <b>같은 순간에</b> 편집기가 다시 보이고 조건 칸이 채워진다. 그때 Avalonia는 위쪽 칸의 높이를 109로 새로 재지만(DesiredSize) 자리 잡기(Arrange)는
+    /// 건너뛴다 — 감싼 Grid가 「자리가 이미 맞다」(IsArrangeValid)로 남아 위쪽 칸의 실제 높이가 53 그대로였고, 열 머리 줄이 53 자리에 서서 조건 칸에 겹쳤다.
+    /// 편집기가 줄곧 보이던 길(에피소드 → 분기)이나, 오른쪽 탭이 바뀌어 편집기가 떼였다 붙는 길(챕터 영역 → 분기)은 통째로 다시 배치되므로 나지 않는다.
+    /// 조건 칸을 갈 때마다 그 칸부터 편집기까지 「다시 재라」(다시 자리 잡기도 함께 걸린다)를 걸면 위쪽 칸이 109로 선다(같은 길로 실제 앱에서 확인) — 값싼 일이다.
+    /// 머리 없는 화면 시험에서는 이 순서로도 나지 않아(배치를 시험이 곧바로 돌린다) 시험으로는 지키지 못한다.
+    /// </summary>
+    private void RemeasureUpward(Layoutable from)
+    {
+        for (Visual? visual = from; visual is not null; visual = visual.GetVisualParent())
+        {
+            (visual as Layoutable)?.InvalidateMeasure();
+
+            if (ReferenceEquals(visual, this))
+            {
+                break;
+            }
+        }
+    }
 
     /// <summary>그 줄의 「조건 분기」 카드 하나가 지는 표(줄과 다녀갈 카드) — 화면 테스트가 이것으로 찾는다.</summary>
     internal static string BranchMarkerTag(string lineId, string targetId) =>
@@ -1203,12 +1344,13 @@ public partial class DialogueNodeEditor : UserControl
         var plus = new Button
         {
             Content = "＋",
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(5, 1),
             MinHeight = 0,
             Margin = new Thickness(2, 0, 0, 0),
             HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
+            Classes = { LineAddClass }
         };
         ToolTip.SetTip(plus, Ui.Dialogue_AddBranchBeforeThisLine);
         plus.Click += (_, _) => OpenLineMetaFlyout(plus, node, resolved);
@@ -1238,8 +1380,8 @@ public partial class DialogueNodeEditor : UserControl
             panel.Children.Add(new TextBlock
             {
                 Text = title,
-                FontSize = 10,
-                Opacity = 0.6,
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.6),
                 Margin = new Thickness(0, panel.Children.Count == 0 ? 0 : 6, 0, 0)
             });
         }
@@ -1269,8 +1411,8 @@ public partial class DialogueNodeEditor : UserControl
                 Text = existing.Count == 1
                     ? Ui.Dialogue_ThereSOneBranchBefore
                     : string.Format(Ui.Dialogue_ThereAreBranchesBeforeThis, existing.Count),
-                FontSize = 10,
-                Opacity = 0.6,
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.6),
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
             });
@@ -1296,8 +1438,8 @@ public partial class DialogueNodeEditor : UserControl
             panel.Children.Add(new TextBlock
             {
                 Text = Ui.Dialogue_BranchCardsDonTBranch,
-                FontSize = 10,
-                Opacity = 0.65,
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.65),
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
             });
@@ -1310,8 +1452,8 @@ public partial class DialogueNodeEditor : UserControl
             panel.Children.Add(new TextBlock
             {
                 Text = Ui.Dialogue_ChapterEpisodeChoicesAndStat,
-                FontSize = 10,
-                Opacity = 0.65,
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.65),
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
             });
@@ -1341,7 +1483,7 @@ public partial class DialogueNodeEditor : UserControl
         var addBelow = new Button
         {
             Content = Ui.Dialogue_AddLineBelow2,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(8, 3),
             Margin = new Thickness(0, 6, 0, 0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -1396,7 +1538,7 @@ public partial class DialogueNodeEditor : UserControl
         var addBranch = new Button
         {
             Content = Ui.Dialogue_AddBranch,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Padding = new Thickness(7, 2)
         };
         ToolTip.SetTip(
@@ -1458,7 +1600,7 @@ public partial class DialogueNodeEditor : UserControl
                 Text = orphan.LastKnownText is { } text
                     ? string.Format(Ui.Dialogue_LastContent, text.Speaker, text.Text)
                     : Ui.Dialogue_ThisLineIsnTIn,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 TextWrapping = TextWrapping.Wrap
             });
 
@@ -1470,7 +1612,7 @@ public partial class DialogueNodeEditor : UserControl
             {
                 Padding = new Thickness(10),
                 CornerRadius = new CornerRadius(6),
-                Background = new SolidColorBrush(Color.FromArgb(20, 220, 38, 38)),
+                Background = Skin.Danger.Brush(20),
                 Child = content
             });
         }
@@ -1544,7 +1686,7 @@ public partial class DialogueNodeEditor : UserControl
         var button = new Button
         {
             Content = glyph,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Padding = new Thickness(6, 2),
             Margin = new Thickness(2, 0, 0, 0),
             VerticalAlignment = VerticalAlignment.Center

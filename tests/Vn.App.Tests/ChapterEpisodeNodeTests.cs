@@ -80,7 +80,7 @@ public sealed class ChapterEpisodeNodeTests
     [Fact]
     public void 챕터_에피소드의_본문과_화자가_열렸다() => HeadlessUi.Run(() =>
     {
-        // 본문 · 화자 · ▾ 셋 다 열려 있다.
+        // 본문 · 화자 둘 다 열려 있다.
         (DialogueNodeEditor editor, _, _) = ShowEpisodeCard();
         var host = editor.FindControl<StackPanel>("LineHost")!;
 
@@ -92,16 +92,11 @@ public sealed class ChapterEpisodeNodeTests
         Assert.All(bodies, box => Assert.False(box.IsReadOnly));
         Assert.All(bodies, box => Assert.True(box.IsHitTestVisible));
 
-        // 화자 칸과 그 옆 ▾ — 함께 열린다.
+        // 화자 칸 — 열려 있다(적으면 등록 화자가 후보로 뜬다). 옆의 ▾(등록 화자 목록)는 2026-11-26에 걷었다(소유자 — 「필요가 없을 것 같습니다」).
         List<AutoCompleteBox> speakers = host.GetVisualDescendants().OfType<AutoCompleteBox>().ToList();
         Assert.NotEmpty(speakers);
         Assert.All(speakers, box => Assert.True(box.IsEnabled));
-
-        List<Button> picks = host.GetVisualDescendants().OfType<Button>()
-            .Where(button => button.Content as string == "▾")
-            .ToList();
-        Assert.NotEmpty(picks);
-        Assert.All(picks, button => Assert.True(button.IsEnabled));
+        Assert.DoesNotContain(host.GetVisualDescendants().OfType<Button>(), button => button.Content as string == "▾");
     });
 
     [Fact]

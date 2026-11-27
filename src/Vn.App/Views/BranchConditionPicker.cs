@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.App.Strings;
 
@@ -58,7 +59,7 @@ internal static class BranchConditionPicker
 
         var combo = new ComboBox
         {
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
             ItemsSource = items,
             SelectedItem = items.FirstOrDefault(item => Equals(item.Tag, state.Label)) ?? items[0],

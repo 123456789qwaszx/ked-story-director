@@ -140,6 +140,7 @@
 | 복제할 폴더 | Mirror folder | 게임 폴더 등 |
 | 단축키 | Shortcuts | |
 | 언어 | Language | 설정의 새 칸 — *Applies after restart* |
+| 테마 · 맑은 하늘 · 기본 | Theme · Clear sky · Classic | 설정 「기타」의 테마 칸 — 다시 켤 때 바뀐다(docs/themes.md) |
 
 ## 7. 파일 · 편집
 

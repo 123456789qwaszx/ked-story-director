@@ -1807,4 +1807,28 @@
     <value>스탯 '{0}'</value>
     <comment>ChapterMoveGuard.cs</comment>
   </data>
+  <data name="File_ColorOfSceneNote" xml:space="preserve">
+    <value>장면 메모의 color</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_SceneColorOutOfRange" xml:space="preserve">
+    <value>장면 '{0}'의 색이 {1}입니다 — 1 ~ {2} 가운데 하나여야 합니다.</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="Edit_SceneColorOutOfRange" xml:space="preserve">
+    <value>장면 색 {0}은 팔레트 밖입니다 — 1 ~ {1} 가운데 하나입니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="File_RgbOfSceneNote" xml:space="preserve">
+    <value>장면 메모의 rgb</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_SceneRgbInvalid" xml:space="preserve">
+    <value>장면 '{0}'의 rgb가 '{1}'입니다 — #RRGGBB 꼴(예: #4A90D9)이어야 합니다.</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_SceneColorAndRgb" xml:space="preserve">
+    <value>장면 '{0}'에 color와 rgb가 함께 있습니다 — 하나만 적습니다.</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
 </root>

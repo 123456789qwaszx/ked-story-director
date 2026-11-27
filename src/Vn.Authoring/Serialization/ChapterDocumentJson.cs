@@ -301,11 +301,56 @@ internal static class ChapterDocumentJson
 
     // ── 장면 메모 ────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// 장면 곁 자료의 색 — 팔레트 칸은 <c>color</c>(1 ~ 5), RGB로 고른 색은 <c>rgb</c>(<c>"#RRGGBB"</c> · 2026-11-27). 둘이 함께면 어느 것인지 도구가 정할 수
+    /// 없어 읽지 않는다. 없으면 자동(null).
+    /// </summary>
+    private static int? ReadSceneColor(JsonObject json)
+    {
+        string sceneId = JsonSupport.RequiredText(json["sceneId"], Msg.File_SceneIdOfSceneNote);
+        int? slot = json["color"] is { } color ? JsonSupport.RequiredInt(color, Msg.File_ColorOfSceneNote) : null;
+        string? rgb = json["rgb"] is { } text ? JsonSupport.RequiredText(text, Msg.File_RgbOfSceneNote) : null;
+
+        if (slot is not null && rgb is not null)
+        {
+            throw new InvalidDataException(string.Format(Msg.File_SceneColorAndRgb, sceneId));
+        }
+
+        if (slot is int picked && !SceneColors.IsSlot(picked))
+        {
+            throw new InvalidDataException(string.Format(Msg.File_SceneColorOutOfRange, sceneId, picked, SceneColors.Count));
+        }
+
+        if (rgb is not null)
+        {
+            return SceneColors.TryParseHex(rgb, out int custom) && rgb.StartsWith('#')
+                ? custom
+                : throw new InvalidDataException(string.Format(Msg.File_SceneRgbInvalid, sceneId, rgb));
+        }
+
+        return slot;
+    }
+
     private static JsonObject WriteSceneNote(ChapterSceneNote note)
     {
         var json = new JsonObject { ["sceneId"] = note.SceneId };
         Text(json, "name", string.IsNullOrWhiteSpace(note.Name) ? null : note.Name);
         Text(json, "text", string.IsNullOrWhiteSpace(note.Text) ? null : note.Text);
+
+        // 고른 장면 색 — 팔레트 칸이면 color(1 ~ 5), RGB로 고른 색이면 rgb("#RRGGBB" · 2026-11-27). 자동이면 적지 않는다(design/scene-colors.md 5.1).
+        // rgb는 따로 적는다 — 옛 리더는 모르는 칸을 읽지 않으니 그 장면을 자동 색으로 연다(color에 넣으면 1 ~ 5 밖이라 열지 못한다).
+        if (note.Color is int color)
+        {
+            if (SceneColors.IsCustom(color))
+            {
+                json["rgb"] = SceneColors.HexOf(color);
+            }
+            else
+            {
+                json["color"] = color;
+            }
+        }
+
         return json;
     }
 
@@ -321,7 +366,8 @@ internal static class ChapterDocumentJson
         foreach (ChapterSceneNote note in Take(node, "sceneNotes", json => new ChapterSceneNote(
                      JsonSupport.RequiredText(json["sceneId"], Msg.File_SceneIdOfSceneNote),
                      Text(json["text"], Msg.File_TextOfSceneNote),
-                     Omittable(json["name"], Msg.File_NameOfSceneNote))))
+                     Omittable(json["name"], Msg.File_NameOfSceneNote),
+                     ReadSceneColor(json))))
         {
             if (!seen.Add(note.SceneId))
             {

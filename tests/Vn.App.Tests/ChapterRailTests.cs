@@ -56,8 +56,10 @@ public sealed class ChapterRailTests
         Assert.Contains("의심한다", labels);
         Assert.DoesNotContain(labels, label => label.Contains("trust") || label.Contains("suspicion"));
 
-        // 같은 출발의 가지들은 같은 분기점 X(줄기)를 공유한다 — 단일 분기점.
-        Assert.Single(Rows(canvas, "EP00").Select(Canvas.GetLeft).Distinct());
+        // 같은 출발의 칸들은 한 가로 줄에 나란히 매달린다(2026-11-26 — ⛔ 그 전에는 줄기에 세로로 쌓여 왼쪽이 같았다) — 높이가 같고 옆으로 차례대로다.
+        List<StackPanel> chips = Rows(canvas, "EP00").ToList();
+        Assert.Single(chips.Select(chip => Math.Round(Canvas.GetTop(chip) + (chip.DesiredSize.Height / 2), 1)).Distinct());
+        Assert.Equal(chips.Count, chips.Select(Canvas.GetLeft).Distinct().Count());
 
         // 도착 포트 — 들어오는 가지가 있는 카드(EP01·EP02)의 위 가운데에 접점이 서고,
         // 가지들은 카드에 직접 붙지 않고 그 접점으로 모인다.

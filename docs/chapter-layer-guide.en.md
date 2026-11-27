@@ -80,8 +80,8 @@ Except for `release-baselines/`, the tool builds and edits all of them — you n
     It removes the chapter with its scenes · episodes · the cards on the board, and undo (Ctrl+Z) brings it back. Don't delete files from the folder by hand — the board and
     nodes stay in the project and blow up with "no calling node".
 - **Center** — the graph board. Card = episode, line = path (edge).
-  - Chips on the first row of a card's header: blue `Scene start` = where the scene is entered from outside (the chapter's starting episode — the first in the chapter's episode
-    list — gets this chip too) · purple `{scene ID}` (the scene name with "Show IDs" off) · `🔒` = an incoming path has a show/unlock condition · `⚠` = an error or unreachable
+  - Chips on the first row of a card's header: gold `Scene start` = where the scene is entered from outside (the chapter's starting episode — the first in the chapter's episode
+    list — gets this chip too) · `{scene ID}` in the scene's color (the scene name with "Show IDs" off — the thin stripe on the card's left edge is the same color) · `🔒` = an incoming path has a show/unlock condition · `⚠` = an error or unreachable
     (there's a path, but a condition stops it from being reached). The second row is the episode ID (the title with it off). **A faded card** = not yet connected from the start —
     a warning because it's work in progress, and it doesn't block export. The event key is a value the tool doesn't interpret, so cards have no badge for it (§6).
   - On a line: a text box — the choice text in the middle (`AUTO` for an auto path, `⚠ No text` if empty), "Show: …" · "Unlock: …" above, stat changes below.
@@ -154,7 +154,10 @@ In other words, **everything can be taken back within a scene, and it's committe
 
 ### On screen
 
-- **Cards**: chips on the first row of the header — a blue `Scene start` on the card where a scene starts, and a purple `{scene ID}` — with the episode ID on the second row.
+- **Cards**: chips on the first row of the header — a gold `Scene start` on the card where a scene starts, and `{scene ID}` in the scene's color — with the episode ID on
+  the second row. The thin stripe on the card's left edge is the scene's color too. Each scene gets one of five colors, the same as its background on the [Script] board and
+  its dot in the Hierarchy, so you can find the same scene by color in both tabs (colors are picked in the [Script] tab — see "Scene colors" in the writer guide). The
+  [Structure] board has no scene outlines.
   Turn off **Show IDs** in the toolbar (on at first) and the Hierarchy and cards show names (scene names · episode titles), like the [Script] tab — remembered on this PC.
 - **Folded board** ([Script] tab — double-click a chapter label): the inside of the board is shown **grouped by scene**. Branch cards no episode calls gather at the bottom
   under `Outside scenes`.
@@ -179,6 +182,7 @@ In other words, **everything can be taken back within a scene, and it's committe
 **People decide positions.** **Drag** cards to move them, and the position you drop them at is saved as is — the same handling as the [Script] tab.
 If you moved one by mistake, one **Ctrl+Z** (one drag is one undo). Zoom with the wheel, drag with the middle button to move the board, and the
 toolbar's **[Fit to screen]** adjusts only the zoom and scroll so all of this chapter's cards fit on one screen (card positions stay).
+When you zoom out, the choice text on the lines doesn't get smaller than at 100% — you can read it while seeing the whole chapter (it grows in place on its line).
 
 **The board (white) and outside the board (gray)** — the board is as big as this chapter's cards plus margins, and if it's smaller than the screen, the surroundings are the
 gray outside. The outside accepts input like the board: click and drag to select an area, and cards and the selection rectangle dragged outside the board stay visible. Drop
@@ -270,8 +274,11 @@ A condition is registered once in a **name ↔ expression** table, and called **
      this chapter's stats**.
    - As soon as the expression is filled in, the condition line (`<<if …>>`) in the writing boxes of cards using that condition changes too. An expression that names a stat
      not yet created goes onto the board the moment that stat is added.
-   - A condition's **name** is edited in the row's name box — choices · branch cards using that name follow (Esc cancels). Deleting is done in the [Script] tab's
-     "Conditions & stats" tab. A condition with an empty expression is "Undecided" — it always passes and only warns.
+   - A condition's **name** is edited in the row's name box — choices · branch cards using that name follow (Esc cancels). Deleting is the row's **[✕]**
+     (same as the stat rows · and the [Script] tab's condition list). If nothing uses it, it's deleted right away; if something does, it shows where and asks once
+     more — **if only paths use it, [Detach all and delete]** sets just those paths' show/unlock condition to “None” and deletes the condition (the paths and their
+     locked messages stay, and one undo brings it all back). If a condition block in dialogue or a branch card's entry condition uses it, the tool doesn't remove
+     those — clear them in the [Script] tab first. A condition with an empty expression is "Undecided" — it always passes and only warns.
    - Stats too: type a key in the box under the stat table in the same tab and press [＋ Add] (it starts as a number (integer) 0, 0–100) — the type ("Number (integer)" ·
      "On/Off") and values are edited on its row, and the **key** in the row's key box.
    - **Write stat keys in English** — start with a letter and use only letters · digits · `_` (e.g. `courage` · `met_harin`). The key goes into Yarn as is, so Hangul ·
@@ -279,7 +286,8 @@ A condition is registered once in a **name ↔ expression** table, and called **
      English in the key box and paths · conditions follow. Entering the key box shows a warning on that row — the key is the name stored in saves, so changing it after
      release returns that stat to its initial value in playthroughs already saved.
 2. **Click a choice line** on the board → choose that name in one of the two combos of the path panel (the condition's expression box appears below the combo, and
-   [＋ New condition] beside it creates the name and expression and sets it right away).
+   [＋ New condition] beside it creates the name and expression and sets it right away — hover **“Expression examples”** to the right of its create button for
+   examples using this chapter's stats).
    - **Show condition** = if not met, **the choice itself isn't shown**
    - **Unlock condition** = if not met, **it's shown locked** with the `Locked hint` (e.g. "Not enough trust")
 

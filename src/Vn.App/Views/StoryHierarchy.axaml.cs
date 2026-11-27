@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Text;
 using Vn.App.Strings;
@@ -152,6 +153,8 @@ internal sealed record HierarchyPick(
 /// </summary>
 /// <param name="Key">그 줄의 신원 — 접힘과 선택을 다시 그린 뒤에도 같은 줄에 잇는다(줄 번호는 편집 한 번에 바뀐다).</param>
 /// <param name="Find">찾기가 견주는 글 — ID와 이름(줄마다 하나 · <c>\n</c>으로 가른다). 보이는 글이 ID든 이름이든 둘 다로 찾는다. null이면 보이는 글.</param>
+/// <param name="SceneColor">장면 줄 — 그 장면의 색 칸(1 ~ 5 · <see cref="SceneColors"/>). 이름 앞에 그 색의 점이 선다. 0이면 점이 없다.</param>
+/// <param name="SceneColorChosen">장면 줄 — 작가가 고른 칸. null이면 자동(「장면 색」 메뉴의 ✓).</param>
 internal sealed record HierarchyRow(
     HierarchyKind Kind,
     string Key,
@@ -165,7 +168,9 @@ internal sealed record HierarchyRow(
     bool HasWarning,
     HierarchyEye Eye = HierarchyEye.None,
     string? NodeId = null,
-    string? Find = null)
+    string? Find = null,
+    int SceneColor = 0,
+    int? SceneColorChosen = null)
 {
     public HierarchyPick Pick => new(Kind, ChapterId, SceneId, EpisodeId, NodeId);
 }
@@ -359,6 +364,18 @@ public partial class StoryHierarchy : UserControl
 
     /// <summary>줄의 우클릭 차림표에서 무엇을 하자고 했다 — 그 줄과, 차림을 띄울 과녁(그 줄의 컨트롤)과 함께.</summary>
     internal event Action<HierarchyCommand, HierarchyRow, Control>? CommandRequested;
+
+    /// <summary>
+    /// 장면 줄의 우클릭 「장면 색」에서 색을 골랐다 — 칠할 장면 줄들(누른 줄이 여러 줄 고르기 안이면 고른 장면 줄 모두, 아니면 누른 줄)과 칸(자동이면 null).
+    /// 넣는 것은 셸이다(<see cref="SceneColorMenu.Apply"/>).
+    /// </summary>
+    internal event Action<IReadOnlyList<HierarchyRow>, int?>? SceneColorRequested;
+
+    /// <summary>
+    /// 장면 줄의 우클릭 「장면 색」 ▸ 「직접 고르기 (RGB)…」 — 칠할 장면 줄들과 차림을 열 자리. 차림을 열고 넣는 것은 셸이다(<see cref="SceneColorMenu.ShowChooser"/> ·
+    /// 2026-11-27).
+    /// </summary>
+    internal event Action<IReadOnlyList<HierarchyRow>, Control>? SceneColorChooserRequested;
 
     /// <summary>
     /// 이름을 고쳐 달라고 했다(줄을 두 번 눌러 새 이름을 적고 Enter). 여기서 고치지 않는다 — 챕터 개명은 판 · 조건 배관을,
@@ -564,6 +581,7 @@ public partial class StoryHierarchy : UserControl
         string chapterId = chapter.ChapterId;
         string key = ChapterKey(chapterId);
         IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter.Model);
+        IReadOnlyDictionary<string, int> sceneColors = SceneColors.Of(scenes, chapter.Model.SceneNotes);
 
         rows.Add(new HierarchyRow(
             // [대본] 탭은 이름(표시 이름, 비면 ID), [구성] 탭은 ID에 곁글로 이름이다(에피소드처럼 — 2026-11-18 소유자). ⛔ [구성] 곁글 「챕터 조건
@@ -593,7 +611,9 @@ public partial class StoryHierarchy : UserControl
                     ChapterSceneNotes.HasMemo(chapter.Model.SceneNotes, scene) ? Ui.Hierarchy_Note : null
                 }.OfType<string>()) is { Length: > 0 } sceneDetail ? sceneDetail : null,
                 Depth: 2, IsSceneRoot: false, HasWarning: scene.HasSplitEntry,
-                Find: Findable(scene.SceneId, scene.DisplayName)));
+                Find: Findable(scene.SceneId, scene.DisplayName),
+                SceneColor: SceneColors.ColorOf(sceneColors, scene.SceneId),
+                SceneColorChosen: ChapterSceneNotes.ColorOf(chapter.Model.SceneNotes, scene.SceneId)));
 
             if (!IsExpanded(sceneKey))
             {
@@ -765,8 +785,8 @@ public partial class StoryHierarchy : UserControl
             {
                 Text = string.Format(Ui.Hierarchy_NothingMatches, _query),
                 Margin = new Thickness(26, 6),
-                Opacity = 0.55,
-                FontSize = 11,
+                Opacity = Skin.Dim(0.55),
+                FontSize = Skin.Font(11),
                 TextWrapping = TextWrapping.Wrap
             });
         }
@@ -777,8 +797,8 @@ public partial class StoryHierarchy : UserControl
             {
                 Text = Ui.Hierarchy_NoProject,
                 Margin = new Thickness(8, 10),
-                Opacity = 0.55,
-                FontSize = 11
+                Opacity = Skin.Dim(0.55),
+                FontSize = Skin.Font(11)
             });
         }
         else if (_chapters.Count == 0)
@@ -793,8 +813,8 @@ public partial class StoryHierarchy : UserControl
                         ? Ui.Hierarchy_NoChaptersCreateOneIn
                         : Ui.Hierarchy_NoChaptersCreateOneWith,
                 Margin = new Thickness(26, 6),
-                Opacity = 0.55,
-                FontSize = 11,
+                Opacity = Skin.Dim(0.55),
+                FontSize = Skin.Font(11),
                 TextWrapping = TextWrapping.Wrap
             });
         }
@@ -808,6 +828,14 @@ public partial class StoryHierarchy : UserControl
     private Control Build(HierarchyRow row)
     {
         var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+
+        // 장면 줄은 이름 앞에 그 장면 색의 점 — 판의 장면 바탕 · 이름표 점과 한 색이다(design/scene-colors.md 4절 · 두 탭이 같다).
+        if (row.Kind == HierarchyKind.Scene && row.SceneColor > 0)
+        {
+            Ellipse dot = SceneColorMenu.Dot(row.SceneColor, 8);
+            dot.Tag = SceneDotTag;
+            line.Children.Add(dot);
+        }
 
         // 종류가 한눈에 갈려야 한다 — 들여쓰기만으로는 같은 글자로 보인다. 크기와 무게를 함께 준다.
         (double size, FontWeight weight, double dim) = row.Kind switch
@@ -833,8 +861,8 @@ public partial class StoryHierarchy : UserControl
             line.Children.Add(new TextBlock
             {
                 Text = detail,
-                FontSize = 10,
-                Opacity = 0.5,
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.5),
                 VerticalAlignment = VerticalAlignment.Center
             });
         }
@@ -844,8 +872,8 @@ public partial class StoryHierarchy : UserControl
             line.Children.Add(new TextBlock
             {
                 Text = "⚠",
-                FontSize = 10,
-                Foreground = Brushes.DarkOrange,
+                FontSize = Skin.Font(10),
+                Foreground = Skin.WarningMark.Brush(),
                 VerticalAlignment = VerticalAlignment.Center,
                 [ToolTip.TipProperty] = row.Kind switch
                 {
@@ -968,7 +996,7 @@ public partial class StoryHierarchy : UserControl
     /// <summary>눈 모양 — 뜬 눈(테두리 + 눈동자) 또는 감은 눈(아래로 굽은 눈꺼풀 + 속눈썹).</summary>
     private static Control EyeGlyph(HierarchyEye eye)
     {
-        IBrush ink = new SolidColorBrush(Color.FromRgb(0x4B, 0x55, 0x63));
+        IBrush ink = Skin.NeutralDark.Brush();
         var glyph = new Canvas
         {
             Width = 14,
@@ -1034,7 +1062,8 @@ public partial class StoryHierarchy : UserControl
             [
                 MenuItemFor(Ui.Board_AddEpisode, HierarchyCommand.AddEpisode, row, anchor),
                 new Separator(),
-                RenameItem(row)
+                RenameItem(row),
+                SceneColorItem(row, anchor)
             ],
             HierarchyKind.Episode =>
             [
@@ -1049,7 +1078,7 @@ public partial class StoryHierarchy : UserControl
 
     private MenuItem MenuItemFor(string header, HierarchyCommand command, HierarchyRow? row, Control anchor)
     {
-        var item = new MenuItem { Header = header, FontSize = 11, Tag = command };
+        var item = new MenuItem { Header = header, FontSize = Skin.Font(11), Tag = command };
         item.Click += (_, _) => UiGuard.Run(null, Ui.Side_HierarchyMenu, () =>
             CommandRequested?.Invoke(command, row ?? ProjectRow(), anchor));
 
@@ -1070,9 +1099,50 @@ public partial class StoryHierarchy : UserControl
         return item;
     }
 
+    /// <summary>
+    /// 장면 줄의 「장면 색」 — 자동(지금 색)과 다섯 색(<see cref="SceneColorMenu"/>). 누른 줄이 여러 줄 고르기 안이면 고른 장면 줄 모두에 칠한다(되돌리기 한 칸 ·
+    /// 2026-11-27 소유자 — 「권고대로」).
+    /// </summary>
+    private MenuItem SceneColorItem(HierarchyRow row, Control anchor)
+    {
+        var item = new MenuItem
+        {
+            Header = Ui.SceneColor_Menu,
+            Icon = SceneColorMenu.Dot(Math.Max(1, row.SceneColor), 10),
+            FontSize = Skin.Font(11),
+            Tag = "scene-color"
+        };
+
+        item.ItemsSource = SceneColorMenu.Items(
+            Math.Max(1, row.SceneColor),
+            row.SceneColorChosen,
+            color => UiGuard.Run(null, Ui.SceneColor_Menu, () => SceneColorRequested?.Invoke(SceneColorTargets(row), color)),
+            () => UiGuard.Run(null, Ui.SceneColor_Menu, () => SceneColorChooserRequested?.Invoke(SceneColorTargets(row), anchor)));
+        return item;
+    }
+
+    /// <summary>「장면 색」을 칠할 장면 줄들 — 누른 줄이 여러 줄 고르기 안이면 고른 것 가운데 장면 줄 모두(보이는 차례), 아니면 누른 줄 하나.</summary>
+    private IReadOnlyList<HierarchyRow> SceneColorTargets(HierarchyRow row)
+    {
+        if (_picks.Count > 1 && _picks.Contains(row.Pick))
+        {
+            List<HierarchyRow> picked = _rows.Where(item => item.Kind == HierarchyKind.Scene && _picks.Contains(item.Pick)).ToList();
+
+            if (picked.Count > 0)
+            {
+                return picked;
+            }
+        }
+
+        return [row];
+    }
+
+    /// <summary>장면 줄 이름 앞의 장면 색 점 — 화면 시험이 찾는다.</summary>
+    internal const string SceneDotTag = "scene-dot";
+
     private MenuItem RenameItem(HierarchyRow row)
     {
-        var item = new MenuItem { Header = Ui.Board_Rename, FontSize = 11, Tag = "rename" };
+        var item = new MenuItem { Header = Ui.Board_Rename, FontSize = Skin.Font(11), Tag = "rename" };
         item.Click += (_, _) => UiGuard.Run(null, Ui.Hierarchy_Rename, () => BeginRename(row.Key));
 
         return item;
@@ -1131,7 +1201,7 @@ public partial class StoryHierarchy : UserControl
         var box = new TextBox
         {
             Text = current,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(4, 1),
             Margin = new Thickness((row.Depth * 14) + 16, 0, 0, 0),
             Tag = "rename:" + row.Key
@@ -1462,9 +1532,9 @@ public partial class StoryHierarchy : UserControl
     /// <summary>테스트의 손잡이 — 잔상의 테두리 붓.</summary>
     internal IBrush? DragGhostBorder => _dragGhost?.BorderBrush;
 
-    private static readonly IBrush GhostIdle = new SolidColorBrush(Color.FromRgb(0x9C, 0xA3, 0xAF));
-    private static readonly IBrush GhostAccept = new SolidColorBrush(Color.FromRgb(0x3D, 0x7B, 0xD9));
-    private static readonly IBrush GhostRefuse = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+    private static IBrush GhostIdle => Skin.NeutralLight.Brush();
+    private static IBrush GhostAccept => Skin.Accent.Brush();
+    private static IBrush GhostRefuse => Skin.Danger.Brush();
 
     /// <summary>끄는 동안 포인터를 따라간다 — 문턱을 넘으면 잔상을 세운다.</summary>
     private void FollowGhost(HierarchyRow row, Avalonia.Input.PointerEventArgs args)
@@ -1483,16 +1553,16 @@ public partial class StoryHierarchy : UserControl
                 return;
             }
 
-            _dragGhostText = new TextBlock { Text = row.Text, FontSize = 12, FontWeight = FontWeight.SemiBold };
+            _dragGhostText = new TextBlock { Text = row.Text, FontSize = Skin.Font(12), FontWeight = FontWeight.SemiBold };
             _dragGhost = new Border
             {
                 Child = _dragGhostText,
                 Padding = new Thickness(8, 3),
                 CornerRadius = new CornerRadius(4),
-                Background = new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)),
+                Background = Skin.Surface.Brush(235),
                 BorderBrush = GhostIdle,
                 BorderThickness = new Thickness(1.5),
-                Opacity = 0.8,
+                Opacity = Skin.Dim(0.8),
                 IsHitTestVisible = false
             };
             layer.Children.Add(_dragGhost);
@@ -1664,7 +1734,7 @@ public partial class StoryHierarchy : UserControl
             if (RowHost.Children[index] is DockPanel host && host.Children.OfType<Button>().FirstOrDefault() is { } button)
             {
                 button.Background = selected.Contains(_rows[index].Key)
-                    ? new SolidColorBrush(Color.FromArgb(48, 61, 123, 217))
+                    ? Skin.RowSelected.Brush()
                     : Brushes.Transparent;
 
                 // 끌고 지나가는 동안 받아 줄 자리에 테두리 — 아무 표시가 없으면 놓아도 되는지 모른 채 손을 놓는다.
@@ -1695,8 +1765,8 @@ public partial class StoryHierarchy : UserControl
                 button.BorderBrush = !landing
                     ? Brushes.Transparent
                     : why is null
-                        ? new SolidColorBrush(Color.FromArgb(220, 61, 123, 217))
-                        : new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+                        ? Skin.Accent.Brush(220)
+                        : Skin.Danger.Brush();
             }
         }
 
@@ -1742,7 +1812,7 @@ public partial class StoryHierarchy : UserControl
             return;
         }
 
-        ToolTip.SetTip(on, new TextBlock { Text = (refuses ? "✕ " : "↪ ") + why, TextWrapping = TextWrapping.Wrap, MaxWidth = 380, FontSize = 12 });
+        ToolTip.SetTip(on, new TextBlock { Text = (refuses ? "✕ " : "↪ ") + why, TextWrapping = TextWrapping.Wrap, MaxWidth = 380, FontSize = Skin.Font(12) });
         ToolTip.SetPlacement(on, PlacementMode.Right);
         ToolTip.SetIsOpen(on, true);
 

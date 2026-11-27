@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using Path = System.IO.Path;
 using ShapePath = Avalonia.Controls.Shapes.Path;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
@@ -40,26 +41,31 @@ public sealed class GraphRubberBandTests : IDisposable
         session.Select(CardId(session, "a"));
         Dispatcher.UIThread.RunJobs();
 
-        // 두 레인(root→b는 x=222, root→a는 x=232)을 가로지른다 — 카드는 안 걸린다. 놓은 자리(x=300)에 root→a가 가깝다.
-        // 시작한 자리(x=215)에는 root→b가 가깝지만 그것은 보지 않는다.
-        Band(graph, new Point(215, 300), new Point(300, 330));
+        // 두 길의 내려가는 줄을 가로지른다(root 카드와 a 카드 사이의 띠 — 카드는 안 걸린다). root→b는 첫 칸 밑으로 곧게 내려가면 a 카드 뒤를 지나므로
+        // 카드 오른쪽 바깥(x=222)으로 비켜 내려가고, root→a는 둘째 칸 밑에서 곧게 내려간다. 두 길 다 접점(카드 가운데)이 세로 줄보다 왼쪽이라 세로 줄이
+        // 길에서 가장 오른쪽이다. 놓은 자리에 가까운 길을 고른다 — 시작한 자리에 가까운 길은 보지 않는다.
+        double laneA = Lane(graph, "a").Data!.Bounds.Right;
+        double laneB = Lane(graph, "b").Data!.Bounds.Right;
+        var besideA = new Point(laneA < laneB ? laneA - 8 : laneA + 8, 345);
+        var besideB = new Point(laneA < laneB ? laneB + 8 : laneB - 8, 360);
+        Band(graph, besideB, besideA);
 
         Assert.Null(session.SelectedNodeId);
         Assert.Equal("선택지 · root → a", Title(graph));
-        Assert.Equal(2.4, Lane(graph, "a").StrokeThickness);
-        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
+        Assert.Equal(Picked(graph), Lane(graph, "a").StrokeThickness);
+        Assert.Equal(Plain(graph), Lane(graph, "b").StrokeThickness);
         Assert.False(Editor(window).IsVisible);
 
-        // 거꾸로 그으면 놓은 자리(x=215)에 root→b가 가깝다.
-        Band(graph, new Point(300, 300), new Point(215, 330));
+        // 거꾸로 그으면 놓은 자리에 root→b가 가깝다.
+        Band(graph, besideA, besideB);
 
         Assert.Equal("선택지 · root → b", Title(graph));
         Assert.Equal("교무실로 간다", graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<TextBox>()
             .First(box => box.IsEffectivelyVisible && box.Tag as string == "summary-label").Text);   // 문구는 고치는 칸에 선다
         Assert.Contains("해금조건: 용기 — 아니면 잠긴 채 보입니다", Facts(graph));
         Assert.Contains("스탯변화: trust +2", Facts(graph));
-        Assert.Equal(1.4, Lane(graph, "a").StrokeThickness);
-        Assert.Equal(2.4, Lane(graph, "b").StrokeThickness);
+        Assert.Equal(Plain(graph), Lane(graph, "a").StrokeThickness);
+        Assert.Equal(Picked(graph), Lane(graph, "b").StrokeThickness);
 
         // 고치는 곳은 [구성] 탭 — 단추가 그 선택지를 고른 채로 데려간다.
         Summary(graph, "summary-open").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -88,7 +94,7 @@ public sealed class GraphRubberBandTests : IDisposable
         Assert.Equal(1, Card(graph, CardId(session, "root")).BorderThickness.Left);
 
         // 함께 걸친 레인은 고르지도 칠하지도 않는다.
-        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
+        Assert.Equal(Plain(graph), Lane(graph, "b").StrokeThickness);
 
         // 빈 판을 다시 누르면 무리가 풀린다.
         Press(Canvas(graph), At(graph, new Point(400, 300)));
@@ -119,7 +125,7 @@ public sealed class GraphRubberBandTests : IDisposable
         Assert.Equal(CardId(session, "b"), session.SelectedNodeId);
         Assert.True(Editor(window).IsVisible);
         Assert.Equal("ch01 - hall", Title(graph));
-        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
+        Assert.Equal(Plain(graph), Lane(graph, "b").StrokeThickness);
 
         // 다시 레인을 고른 뒤 빈 판을 누르면 설명이 내려간다 — 챕터 밖의 빈 판이라 프로젝트가 선다(2026-11-17 — 화자는 「화자」 탭 · side-tabs V3).
         Press(LaneHit(graph), At(graph, new Point(222, 400)));
@@ -128,7 +134,7 @@ public sealed class GraphRubberBandTests : IDisposable
         Release(Canvas(graph), At(graph, new Point(3000, 3000)));
 
         Assert.Equal("프로젝트", Title(graph));
-        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
+        Assert.Equal(Plain(graph), Lane(graph, "b").StrokeThickness);
 
         window.Close();
     });
@@ -171,7 +177,7 @@ public sealed class GraphRubberBandTests : IDisposable
 
     /// <summary>
     /// [대본] 탭 — ch01에 선택지 하나(root → b, 해금조건 · 스탯변화)를 놓는다. ch02 판은 접는다: 두 판이 같은 자리에 펼쳐지면 카드가
-    /// 겹친다. 카드는 위에서 아래로 root(0,0) · a(0,400) · b(0,800)이고, 레인은 root 칩에서 x=222를 타고 내려가 b 앞 접점으로 든다.
+    /// 겹친다. 카드는 위에서 아래로 root(0,0) · a(0,400) · b(0,800)이고, 길은 root의 첫 칸 밑에서 내려와 사이의 a 카드를 비켜 x=222를 타고 b 앞 접점으로 든다.
     /// </summary>
     private (MainWindow Window, AuthoringSession Session, GraphEditorView Graph) Show()
     {
@@ -186,6 +192,14 @@ public sealed class GraphRubberBandTests : IDisposable
 
     private static string CardId(AuthoringSession session, string episodeId) =>
         EpisodeNaming.CardFor(session.Project, "ch01", episodeId)!.Id;
+
+    /// <summary>
+    /// 고른 레인 · 그 밖 레인의 굵기 — 판의 굵기(2.4 · 1.4 × 테마의 선 굵기), 단 화면 바닥(design/board-zoom.md 5절)보다 가늘어지지 않는다. 이 판은 열 때 챕터에
+    /// 맞춰 100%보다 작게 서므로(화면 맞춤) 고른 레인은 바닥 2px ÷ 배율로 굵어진다.
+    /// </summary>
+    private static double Picked(GraphEditorView graph) => Math.Max(2.4 * Skin.LineWeight, GraphEditorView.PickedLineFloorPx / graph.Zoom);
+
+    private static double Plain(GraphEditorView graph) => Math.Max(1.4 * Skin.LineWeight, GraphEditorView.LineFloorPx / graph.Zoom);
 
     private static Canvas Canvas(GraphEditorView graph) => graph.FindControl<Canvas>("GraphCanvas")!;
 

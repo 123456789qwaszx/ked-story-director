@@ -455,7 +455,7 @@ public sealed class SettingsWindowTests : IDisposable
     });
 
     /// <summary>
-    /// 2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선, 곡선, 직각 중에 기본 생성을 선택할 수 있게」. 「기타」의 「선택지 선」(2026-11-26 — ⛔ 「새로 잇는 선」) — 처음은 직각, 고르는
+    /// 2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선, 곡선, 직각 중에 기본 생성을 선택할 수 있게」. 「기타」의 「기본 선택지 선」(2026-11-27 소유자 — ⛔ 2026-11-26 「선택지 선」 · 그 전 「새로 잇는 선」) — 처음은 직각, 고르는
     /// 즉시 앱 설정에 들어가고 프로젝트는 그대로이며, 그 뒤 생기는 선이 그 꼴이다. 다시 열면 고른 것이 보인다.
     /// </summary>
     [Fact]
@@ -472,7 +472,7 @@ public sealed class SettingsWindowTests : IDisposable
             Assert.Equal(["직각", "곡선", "직선"], settings.NewLineShapeCombo.Items.Cast<string>());
             Assert.Equal("직각", settings.NewLineShapeCombo.SelectedItem);
             Assert.True(settings.NewLineShapeCombo.IsEffectivelyVisible);
-            Assert.Contains(settings.GetVisualDescendants().OfType<TextBlock>(), block => block.Text == "선택지 선");
+            Assert.Contains(settings.GetVisualDescendants().OfType<TextBlock>(), block => block.Text == "기본 선택지 선");
 
             settings.NewLineShapeCombo.SelectedItem = "직선";
             Dispatcher.UIThread.RunJobs();

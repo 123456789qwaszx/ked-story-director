@@ -1,0 +1,162 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- 기본 테마(클래식) — 0.5.0까지의 모양 그대로다. 모든 이름(Theming/Skin.cs)의 값이 여기 있고, 다른 테마는 이 위에 얹혀
+         바꾸고 싶은 이름만 적는다(Theming/ThemeService.cs). 이름을 더할 때는 Skin.cs의 속성과 여기 키를 함께 더한다. -->
+
+    <!-- 공통 -->
+    <Color x:Key="OnAccent">#FFFFFF</Color>
+    <Color x:Key="Surface">#FFFFFF</Color>
+    <Color x:Key="IconInk">#000000</Color>
+    <Color x:Key="Hairline">#808080</Color>
+    <Color x:Key="Divider">#33555555</Color>
+    <Color x:Key="SwatchBorder">#000000</Color>
+    <Color x:Key="Neutral">#6B7280</Color>
+    <Color x:Key="NeutralLight">#9CA3AF</Color>
+    <Color x:Key="NeutralDark">#4B5563</Color>
+
+    <!-- 상태 -->
+    <Color x:Key="Selection">#2563EB</Color>
+    <Color x:Key="Join">#2563EB</Color>
+    <Color x:Key="Accent">#3D7BD9</Color>
+    <Color x:Key="Danger">#DC2626</Color>
+    <Color x:Key="DangerDeep">#C0392B</Color>
+    <Color x:Key="DangerText">#CD5C5C</Color>
+    <Color x:Key="DangerButton">#BE3C3C</Color>
+    <Color x:Key="Success">#1F9D55</Color>
+    <Color x:Key="Warning">#B9770E</Color>
+    <Color x:Key="WarningText">#B8860B</Color>
+    <Color x:Key="WarningMark">#FF8C00</Color>
+    <Color x:Key="ProblemInk">#C2410C</Color>
+
+    <!-- 틀 -->
+    <Color x:Key="FloatingSurface">#F2F6F7FA</Color>
+    <Color x:Key="FloatingBorder">#66808080</Color>
+    <Color x:Key="FloatingDivider">#33808080</Color>
+    <Color x:Key="FindBarSurface">#F7F8FAFC</Color>
+    <Color x:Key="NoticeSurface">#FFF4D6</Color>
+    <Color x:Key="NoticeBorder">#E0B84A</Color>
+    <Color x:Key="NoticeInk">#5A4300</Color>
+    <Color x:Key="NoteBorder">#C9A227</Color>
+
+    <!-- [대본] 판 -->
+    <Color x:Key="ProxySurface">#F3F4F6</Color>
+    <Color x:Key="EpisodeAccent">#D97706</Color>
+    <Color x:Key="EpisodeSurface">#FBF6EA</Color>
+    <Color x:Key="EpisodeBorder">#E3D5B7</Color>
+    <Color x:Key="SceneRootAccent">#3D7BD9</Color>
+    <Color x:Key="SceneRootSurface">#EFF4FC</Color>
+    <Color x:Key="SceneRootBorder">#C3D5EF</Color>
+    <Color x:Key="BranchAccent">#7C5CC4</Color>
+    <Color x:Key="BranchSurface">#F6F3FC</Color>
+    <Color x:Key="BranchBorder">#D5CBEE</Color>
+    <Color x:Key="OtherCardAccent">#3B82F6</Color>
+    <Color x:Key="OtherCardSurface">#EFF6FF</Color>
+    <Color x:Key="OtherCardBorder">#5A808080</Color>
+    <Color x:Key="SlotLive">#D93A3A</Color>
+    <Color x:Key="SlotAsleep">#78969696</Color>
+    <Color x:Key="SlotPlaceholderBorder">#B8BCC4</Color>
+    <Color x:Key="Rail">#AA787878</Color>
+    <Color x:Key="ChoiceInk">#C06A14</Color>
+    <Color x:Key="Connection">#96646464</Color>
+    <Color x:Key="BranchHub">#334155</Color>
+    <Color x:Key="BranchHubOpen">#94A3B8</Color>
+    <Color x:Key="MinimapZoomHidden">#A0A0A0</Color>
+    <Color x:Key="BranchLine1">#3B82F6</Color>
+    <Color x:Key="BranchLine2">#8B5CF6</Color>
+    <Color x:Key="BranchLine3">#0E9F6E</Color>
+    <Color x:Key="BranchLine4">#D97706</Color>
+    <Color x:Key="BranchLine5">#DB2777</Color>
+    <Color x:Key="BranchLine6">#0891B2</Color>
+
+    <!-- [대본] 판 — 테두리 · 머리 띠 · 선택지 칸 -->
+    <Color x:Key="ChapterFrameBorder">#963D7BD9</Color>
+    <Color x:Key="ChapterFrameBorderIdle">#46808080</Color>
+    <Color x:Key="ChapterFrameFill">#0C3D7BD9</Color>
+    <Color x:Key="ChapterFrameFillIdle">#08808080</Color>
+    <Color x:Key="ChapterLabel">#DC3D7BD9</Color>
+    <Color x:Key="ChapterLabelIdle">#A06B7280</Color>
+    <Color x:Key="ChapterLabelInk">#FFFFFF</Color>
+    <Color x:Key="SceneFrameBorder">#5AD97706</Color>
+    <!-- 장면 바탕 — 다섯 색조를 옅게 비치게(맑은 하늘의 점 색 · design/scene-colors.md). 겹친 자리는 한 겹 더 진하다. -->
+    <Color x:Key="SceneTint1">#1442815A</Color>
+    <Color x:Key="SceneTint2">#149E5D77</Color>
+    <Color x:Key="SceneTint3">#14138186</Color>
+    <Color x:Key="SceneTint4">#147C7733</Color>
+    <Color x:Key="SceneTint5">#147D68A2</Color>
+    <Color x:Key="SceneMark1">#42815A</Color>
+    <Color x:Key="SceneMark2">#9E5D77</Color>
+    <Color x:Key="SceneMark3">#138186</Color>
+    <Color x:Key="SceneMark4">#7C7733</Color>
+    <Color x:Key="SceneMark5">#7D68A2</Color>
+    <Color x:Key="SceneLabel">#B4D97706</Color>
+    <Color x:Key="SceneLabelBorder">#00FFFFFF</Color>
+    <Color x:Key="SceneLabelInk">#FFFFFF</Color>
+    <Color x:Key="EpisodeBand">#00FFFFFF</Color>
+    <Color x:Key="SceneRootBand">#00FFFFFF</Color>
+    <Color x:Key="BranchBand">#00FFFFFF</Color>
+    <Color x:Key="OtherCardBand">#00FFFFFF</Color>
+    <Color x:Key="SelectedBand">#00FFFFFF</Color>
+    <!-- 줄인 판의 덩어리 — 기본 테마는 카드 종류의 색(…Accent)이다. -->
+    <Color x:Key="BlockEpisode">#D97706</Color>
+    <Color x:Key="BlockSceneRoot">#3D7BD9</Color>
+    <Color x:Key="BlockBranch">#7C5CC4</Color>
+    <Color x:Key="BlockOther">#3B82F6</Color>
+    <Color x:Key="SlotSurface">#FFFFFF</Color>
+    <Color x:Key="SlotInk">#00000000</Color>
+    <Color x:Key="RowSelected">#303D7BD9</Color>
+    <Color x:Key="SlotAlertSurface">#FFFFFF</Color>
+    <Color x:Key="ChoiceLine1">#0B7A70</Color>
+    <Color x:Key="ChoiceLine2">#A85A10</Color>
+    <Color x:Key="ChoiceLine3">#8A3F96</Color>
+
+    <!-- [구성] 판 -->
+    <Color x:Key="StructureBoard">#FFFFFF</Color>
+    <Color x:Key="StructureSelection">#3D7BD9</Color>
+    <Color x:Key="SelectedRibbon">#00FFFFFF</Color>
+    <Color x:Key="StructureDesk">#E9ECF0</Color>
+    <Color x:Key="StructureCardSurface">#FAFBFCFD</Color>
+    <Color x:Key="StructureSlot">#7F8A96</Color>
+    <Color x:Key="StructureEdge">#8894A0</Color>
+    <Color x:Key="StructureEdgeConditioned">#C08A3E</Color>
+    <Color x:Key="StructureEdgeInk">#5A646E</Color>
+    <Color x:Key="StructureLabelSurface">#F0F4F6F8</Color>
+    <Color x:Key="StructureBranchChipSurface">#F4F2FA</Color>
+    <Color x:Key="StructureInk">#3B3F46</Color>
+    <Color x:Key="StructureInkSoft">#6B6F76</Color>
+    <Color x:Key="ConditionVisible">#7A6FB0</Color>
+    <Color x:Key="ConditionUnlock">#B06A14</Color>
+    <Color x:Key="CardName">#1F2933</Color>
+    <Color x:Key="StatKey">#2B5D74</Color>
+    <Color x:Key="StatValue">#123A4D</Color>
+    <Color x:Key="SceneChip">#6B5CA5</Color>
+
+    <!-- 모양 -->
+    <x:Double x:Key="CardRadius">4</x:Double>
+    <x:Double x:Key="OtherCardRadius">10</x:Double>
+    <x:Double x:Key="ChapterFrameRadius">12</x:Double>
+    <x:Double x:Key="SceneFrameRadius">8</x:Double>
+    <x:Double x:Key="LabelRadius">4</x:Double>
+    <x:Double x:Key="ChipRadius">3</x:Double>
+    <x:Double x:Key="CardSpineOpacity">1</x:Double>
+    <x:Double x:Key="LineWeight">1</x:Double>
+    <x:Double x:Key="SlotRadius">3</x:Double>
+    <x:Double x:Key="SlotPill">0</x:Double>
+    <x:Double x:Key="ChapterLabelFont">14</x:Double>
+    <x:Double x:Key="SceneLabelFont">12</x:Double>
+    <x:Double x:Key="FrameLabelGrow">0</x:Double>
+    <x:Double x:Key="FrameWeight">1</x:Double>
+    <x:Double x:Key="StructureCardRadius">5</x:Double>
+    <x:Double x:Key="LineRowBoxed">1</x:Double>
+    <CornerRadius x:Key="FloatingCorner">6</CornerRadius>
+    <x:Double x:Key="DimLift">0</x:Double>
+    <x:Double x:Key="FontScale">1</x:Double>
+    <x:Double x:Key="TypeMeta">0</x:Double>
+    <x:Double x:Key="TypeUi">0</x:Double>
+    <x:Double x:Key="TypeBody">0</x:Double>
+    <x:Double x:Key="TypeHeading">0</x:Double>
+    <x:Double x:Key="TypeTitle">0</x:Double>
+    <x:String x:Key="FrameLabelShadow">none</x:String>
+    <x:String x:Key="CardSelectedShadow">none</x:String>
+    <x:String x:Key="CardShadow">none</x:String>
+    <x:String x:Key="ChapterFrameShadow">none</x:String>
+</ResourceDictionary>

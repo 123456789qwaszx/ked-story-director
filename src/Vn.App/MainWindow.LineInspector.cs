@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Flow;
@@ -134,7 +135,7 @@ public partial class MainWindow
         var box = new TextBox
         {
             Text = shown,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             PlaceholderText = Ui.Side_LeaveEmptyForAUTOMoves,
             Tag = "summary-label"
         };
@@ -142,7 +143,7 @@ public partial class MainWindow
         row.Children.Add(new TextBlock
         {
             Text = Ui.Side_Text,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 8, 0)
         });
@@ -276,7 +277,7 @@ public partial class MainWindow
     private void Fact(string name, string value) => _sheet.Children.Add(new TextBlock
     {
         Text = $"{name}: {value}",
-        FontSize = 12,
+        FontSize = Skin.Font(12),
         TextWrapping = TextWrapping.Wrap,
         Tag = "summary-fact"
     });
@@ -287,7 +288,7 @@ public partial class MainWindow
         var button = new Button
         {
             Content = text,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Margin = new Thickness(0, 8, 0, 0),
             Tag = "summary-open"
         };

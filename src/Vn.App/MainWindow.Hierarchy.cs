@@ -7,6 +7,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
@@ -109,7 +110,7 @@ public partial class MainWindow
         var box = new TextBox
         {
             Text = shown,
-            FontSize = 13,
+            FontSize = Skin.Font(13),
             FontWeight = FontWeight.SemiBold,
             PlaceholderText = Ui.Side_ChapterNameEmptyShowsChapter,
             Tag = "chapter-name"
@@ -146,7 +147,7 @@ public partial class MainWindow
         }, RoutingStrategies.Tunnel);
 
         // 칸 이름 — 머리(「챕터 단위 조건 · 스탯」) 바로 아래 맨 칸이 무엇인지 말한다. 칸 이름이라 설명 간소화에도 남는다.
-        _sheet.Children.Add(new TextBlock { Text = Ui.Side_ChapterName, FontSize = 11, Opacity = 0.65 });
+        _sheet.Children.Add(new TextBlock { Text = Ui.Side_ChapterName, FontSize = Skin.Font(11), Opacity = Skin.Dim(0.65) });
         _sheet.Children.Add(box);
     }
 
@@ -219,6 +220,34 @@ public partial class MainWindow
                 UiGuard.Run(_session, Ui.Side_HierarchyMenu, () => OnHierarchyCommand(command, row, anchor));
             tree.RenameRequested += (row, name) =>
                 UiGuard.Run(_session, Ui.Board_Rename, () => OnHierarchyRename(tree, row, name));
+            tree.SceneColorRequested += (rows, color) =>
+                UiGuard.Run(_session, Ui.SceneColor_Menu, () => SceneColorMenu.Apply(
+                    _session,
+                    rows.Where(row => row.ChapterId is not null && row.SceneId is not null)
+                        .Select(row => (row.ChapterId!, row.SceneId!, row.Text))
+                        .ToList(),
+                    color));
+
+            // 「직접 고르기 (RGB)…」 — 색 차림을 그 줄에 연다. 직접 고르기는 누른 줄 장면의 지금 색에서 시작한다(2026-11-27).
+            tree.SceneColorChooserRequested += (rows, anchor) =>
+            {
+                List<(string ChapterId, string SceneId, string Name)> scenes = rows
+                    .Where(row => row.ChapterId is not null && row.SceneId is not null)
+                    .Select(row => (row.ChapterId!, row.SceneId!, row.Text))
+                    .ToList();
+
+                if (scenes.Count == 0)
+                {
+                    return;
+                }
+
+                (string ChapterId, string SceneId, string Name) first = scenes[0];
+                SceneColorMenu.ShowChooser(
+                    anchor,
+                    _session,
+                    () => SceneColorMenu.ColorNow(_session, first.ChapterId, first.SceneId),
+                    color => UiGuard.Run(_session, Ui.SceneColor_Menu, () => SceneColorMenu.Apply(_session, scenes, color)));
+            };
             tree.Dropped += (source, target) =>
                 UiGuard.Run(_session, Ui.Side_MoveScene, () => OnHierarchyDropped(source, target));
 
@@ -649,7 +678,8 @@ public partial class MainWindow
 
                 // 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자). 메모 공간의 [＋ 에피소드]가
                 // 그 장면의 에피소드를 고르는 자리다.
-                // 「[구성] 탭에서 장면 열기」도 두지 않는다(2026-11-16 소유자) — 장면 요약은 메모 공간이다.
+                // 「[구성] 탭에서 장면 열기」도 두지 않는다(2026-11-16 소유자) — 장면 요약은 장면 색 줄과 메모 공간이다.
+                SceneColorRow(chapter.ChapterId, scene, chapter.Model);
                 SceneNoteSpace(chapter.ChapterId, scene);
                 break;
             }
@@ -671,15 +701,15 @@ public partial class MainWindow
         Heading(Ui.Side_TextWritten);
         var total = new TextBlock
         {
-            FontSize = 20,
+            FontSize = Skin.Font(20),
             FontWeight = FontWeight.SemiBold,
             Tag = "chapter-characters"
         };
         ToolTip.SetTip(total, Ui.Side_CharactersOfDialogueNarrationWritten);
         var detail = new TextBlock
         {
-            FontSize = 11,
-            Opacity = 0.7,
+            FontSize = Skin.Font(11),
+            Opacity = Skin.Dim(0.7),
             Margin = new Thickness(0, 0, 0, 6),
             Tag = "chapter-characters-detail"
         };
@@ -711,7 +741,7 @@ public partial class MainWindow
     private void Heading(string text) => _sheet.Children.Add(new TextBlock
     {
         Text = text,
-        FontSize = 12,
+        FontSize = Skin.Font(12),
         FontWeight = FontWeight.SemiBold,
         Margin = new Thickness(0, 8, 0, 0)
     });
@@ -744,7 +774,7 @@ public partial class MainWindow
             table.Children.Add(cell);
         }
 
-        TextBlock Head(string text) => new() { Text = text, FontSize = 10, Opacity = 0.6 };
+        TextBlock Head(string text) => new() { Text = text, FontSize = Skin.Font(10), Opacity = Skin.Dim(0.6) };
 
         table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
         Cell(Head(Ui.Side_Stat), 0, 0);
@@ -762,12 +792,12 @@ public partial class MainWindow
                 : string.Format(Ui.Side_Starts, stat.Minimum, stat.Maximum, stat.Initial);
 
             table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            Cell(new TextBlock { Text = name, FontSize = 11, VerticalAlignment = VerticalAlignment.Center }, row, 0);
-            Cell(new TextBlock { Text = range, FontSize = 11, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center }, row, 1);
+            Cell(new TextBlock { Text = name, FontSize = Skin.Font(11), VerticalAlignment = VerticalAlignment.Center }, row, 0);
+            Cell(new TextBlock { Text = range, FontSize = Skin.Font(11), Opacity = Skin.Dim(0.7), VerticalAlignment = VerticalAlignment.Center }, row, 1);
             Cell(new SelectableTextBlock
             {
                 Text = snippet,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 FontFamily = new FontFamily("Consolas, Menlo, monospace"),
                 VerticalAlignment = VerticalAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis,
@@ -777,7 +807,7 @@ public partial class MainWindow
             var copy = new Button
             {
                 Content = Ui.Side_Copy,
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Padding = new Thickness(6, 1),
                 Tag = "stat-copy:" + stat.Key
             };
@@ -813,8 +843,8 @@ public partial class MainWindow
     private void Note(string text) => _sheet.Children.Add(new TextBlock
     {
         Text = text,
-        FontSize = 11,
-        Opacity = 0.65,
+        FontSize = Skin.Font(11),
+        Opacity = Skin.Dim(0.65),
         TextWrapping = TextWrapping.Wrap
     });
 
@@ -826,8 +856,8 @@ public partial class MainWindow
     {
         Full = full,
         Brief = brief,
-        FontSize = 11,
-        Opacity = 0.65,
+        FontSize = Skin.Font(11),
+        Opacity = Skin.Dim(0.65),
         TextWrapping = TextWrapping.Wrap
     });
 
@@ -836,7 +866,7 @@ public partial class MainWindow
         var button = new Button
         {
             Content = text,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(6, 2),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Left,

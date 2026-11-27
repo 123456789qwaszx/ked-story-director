@@ -103,6 +103,94 @@ public static class EdgeShapeRouter
         }
     }
 
+    /// <summary>
+    /// 선택지의 길(2026-11-26 소유자 — 선택지 칸이 카드 아래에 가로로 나란히 서고, 선은 칸에서 <b>아래로</b> 나간다) — 칸의 점 바로 밑
+    /// (<paramref name="from"/>)에서 아래로 나가 도착 접점(<paramref name="junction"/>)에 위에서 든다.
+    ///
+    /// 직각(자동): 조금 내려와(<see cref="DropStep"/> — 이웃 칸의 문구 아래) 세로 길을 타고 도착 접점의 높이에서 가로로 건넌다. 세로 길은 보통 칸 바로 밑
+    /// (<c>from.X</c>)이고, 그 길을 다른 카드가 막으면 부르는 쪽이 비켜 갈 자리(<paramref name="detourX"/>)를 준다 — 그때는 내려온 자리에서 그 길까지 가로로 간다.
+    /// <paramref name="rise"/>는 건너는 줄을 접점보다 그만큼 위에 둔다 — 한 카드의 여러 길이 같은 높이에서 겹쳐 한 줄로 보이지 않게 부르는 쪽이 길마다 달리 준다.
+    /// 꺾이는 점(손잡이) = 세로 길이 건너기 시작하는 모퉁이. 옆으로 끌면 세로 길이, 위아래로 끌면 건너는 줄이 움직인다.
+    /// 곡선: 아래로 나가 위에서 든다. 직선: 두 끝만 잇는다. 둘은 비켜 가지 않는다(사람이 고른 모양이다).
+    /// </summary>
+    public static ShapedEdge Drop(
+        GraphPosition from, GraphPosition junction, EdgeShape? shape, double rise = 0, double? detourX = null)
+    {
+        shape ??= EdgeShape.Default;
+
+        switch (shape.Kind)
+        {
+            case EdgeShapeKind.Straight:
+                return new ShapedEdge(EdgeShapeKind.Straight, [from, junction], null, FreeY: false);
+
+            case EdgeShapeKind.Curve:
+                double reach = Math.Max(CurveReach, Math.Abs(junction.Y - from.Y) / 2);
+                return Curve(
+                    from,
+                    new GraphPosition(from.X, from.Y + reach),
+                    new GraphPosition(junction.X, junction.Y - reach),
+                    junction,
+                    shape);
+
+            default:
+                double stepY = from.Y + DropStep;
+                var bend = new GraphPosition((detourX ?? from.X) + shape.BendX, junction.Y - rise + shape.BendY);
+
+                return new ShapedEdge(
+                    EdgeShapeKind.Elbow,
+                    [
+                        from,
+                        new GraphPosition(from.X, stepY),
+                        new GraphPosition(bend.X, stepY),
+                        bend,
+                        new GraphPosition(junction.X, bend.Y),
+                        junction
+                    ],
+                    bend,
+                    FreeY: true);
+        }
+    }
+
+    /// <summary>
+    /// 선택지의 길이 <b>접은 장면 상자의 줄 입구</b>(<paramref name="entry"/> — 줄의 왼쪽 점)로 든다(2026-11-27 소유자 — 「다른 장면에서 Root로 연결되는 것
+    /// 역시 … 입구로 연결되는 게 맞는 것 같은데, 왼쪽에 있을 경우에는 출구로 연결되어버리는」). 칸의 점 바로 밑(<paramref name="from"/>)에서 아래로 나가
+    /// 건너는 줄(<paramref name="crossY"/>)에서 상자 왼쪽 바깥의 세로 길(<paramref name="laneX"/>)까지 가로로 건너고, 줄 높이까지 가서 입구로 옆에서 든다.
+    /// 건너는 줄은 부르는 쪽이 상자 위(또는 아래)에 준다 — 상자가 길 위에 그려지므로 상자를 가로지르면 길이 상자 뒤로 사라진다. 건널 것이 없으면(세로 길이 곧
+    /// 칸 밑) 부르는 쪽이 줄 높이를 준다 — 곧게 내려가 든다.
+    /// 꺾이는 점(손잡이) = 건너는 줄이 세로 길을 만나는 모퉁이. 옆으로 끌면 세로 길이, 위아래로 끌면 건너는 줄이 움직인다.
+    /// 곡선 · 직선은 사람이 고른 모양이라 비켜 가지 않는다.
+    /// </summary>
+    public static ShapedEdge IntoSide(GraphPosition from, GraphPosition entry, double laneX, double crossY, EdgeShape? shape)
+    {
+        shape ??= EdgeShape.Default;
+
+        switch (shape.Kind)
+        {
+            case EdgeShapeKind.Straight:
+                return new ShapedEdge(EdgeShapeKind.Straight, [from, entry], null, FreeY: false);
+
+            case EdgeShapeKind.Curve:
+                return Curve(
+                    from,
+                    new GraphPosition(from.X, from.Y + Math.Max(CurveReach, Math.Abs(entry.Y - from.Y) / 2)),
+                    new GraphPosition(entry.X - Math.Max(CurveReach, Math.Abs(entry.X - from.X) / 2), entry.Y),
+                    entry,
+                    shape);
+
+            default:
+                var bend = new GraphPosition(laneX + shape.BendX, crossY + shape.BendY);
+
+                return new ShapedEdge(
+                    EdgeShapeKind.Elbow,
+                    [from, new GraphPosition(from.X, bend.Y), bend, new GraphPosition(bend.X, entry.Y), entry],
+                    bend,
+                    FreeY: true);
+        }
+    }
+
+    /// <summary>선택지의 길이 칸의 점 밑에서 곧게 내려오는 거리 — 여기서 세로 길로 옮겨 탄다(이웃 칸의 문구 아래다).</summary>
+    public const double DropStep = 20;
+
     /// <summary>자동 곡선 P0..P3을 t=½에서 쪼개(드 카스텔조) 가운데 마디를 손잡이만큼 옮긴다.</summary>
     private static ShapedEdge Curve(
         GraphPosition p0, GraphPosition p1, GraphPosition p2, GraphPosition p3, EdgeShape shape)

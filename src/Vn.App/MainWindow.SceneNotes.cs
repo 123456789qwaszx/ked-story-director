@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.App.Strings;
@@ -53,7 +54,7 @@ public partial class MainWindow
         var add = new ComboBox
         {
             PlaceholderText = Ui.Notes_Episode,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Tag = "scene-note-add"
         };
@@ -107,7 +108,7 @@ public partial class MainWindow
             var remove = new Button
             {
                 Content = Ui.Notes_Remove,
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Padding = new Thickness(6, 1),
                 Tag = "episode-note-remove:" + episodeId
             };
@@ -119,7 +120,7 @@ public partial class MainWindow
             head.Children.Add(new TextBlock
             {
                 Text = (root ? "⌂ " : "· ") + episode.ShownTitle,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 FontWeight = FontWeight.SemiBold,
                 VerticalAlignment = VerticalAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis
@@ -128,7 +129,7 @@ public partial class MainWindow
             var card = new Border
             {
                 BorderThickness = new Thickness(1),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(70, 128, 128, 128)),
+                BorderBrush = Skin.Hairline.Brush(70),
                 CornerRadius = new CornerRadius(4),
                 Padding = new Thickness(6),
                 Tag = "episode-note-card:" + episodeId,
@@ -206,7 +207,7 @@ public partial class MainWindow
             var remove = new Button
             {
                 Content = Ui.Main_Delete,
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Padding = new Thickness(6, 1),
                 VerticalAlignment = VerticalAlignment.Top,
                 Tag = "orphan-note-remove:" + sceneId
@@ -225,7 +226,7 @@ public partial class MainWindow
             {
                 Text = $"{orphan.Name?.Trim() ?? sceneId}" +
                        (string.IsNullOrWhiteSpace(orphan.Text) ? Ui.Notes_NameOnly : $" — {orphan.Text}"),
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 TextWrapping = TextWrapping.Wrap
             });
 
@@ -254,7 +255,7 @@ public partial class MainWindow
         AcceptsReturn = true,
         TextWrapping = TextWrapping.Wrap,
         MinHeight = minHeight,
-        FontSize = 12,
+        FontSize = Skin.Font(12),
         Tag = tag
     };
 

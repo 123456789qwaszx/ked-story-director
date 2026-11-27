@@ -100,10 +100,8 @@ public partial class MainWindow
         RemoveConfirmButton = ConfirmFlyout.Show(
             anchor,
             _session,
-            branchCards > 0
-                ? Plural.Format(Ui.Side_EpisodesOfSceneAndBranch, scene.DisplayName, scene.Episodes.Count, branchCards)
-                : Plural.Format(Ui.Side_EpisodesOfSceneWillBe, scene.DisplayName, scene.Episodes.Count),
-            Ui.Side_DeleteScene,
+            string.Format(Ui.Confirm_DeleteScene, scene.DisplayName),
+            Ui.Board_Delete,
             () =>
             {
                 Vn.Authoring.Editing.ProjectEditor.RemovedScene removed = _session.Editor.RemoveScene(chapterId, sceneId);
@@ -112,6 +110,9 @@ public partial class MainWindow
                     : Plural.Format(Ui.Side_DeletedSceneEpisodesUndoCtrl, scene.DisplayName, removed.Episodes));
                 ForgetRemovedPick();
             },
+            detail: branchCards > 0
+                ? Plural.Format(Ui.Confirm_SceneTakesEpisodesAndBranches, scene.Episodes.Count, branchCards)
+                : Plural.Format(Ui.Confirm_SceneTakesEpisodes, scene.Episodes.Count),
             closed: () => RemoveConfirmButton = null);
     }
 

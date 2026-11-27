@@ -166,6 +166,57 @@ public sealed class ChapterSheetEditTests : IDisposable
     });
 
     [Fact]
+    public void 아무_데서도_안_쓰는_조건은_X로_지워지고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 「조건을 추가는 할 수 있는데, 지울 수 없다는 게 조금 아쉽고」.
+        (ChapterGraphView view, AuthoringSession session) = Show();
+
+        Press(Assert.Single(Buttons(Row(view, "condition:신뢰높음"))));
+
+        Assert.Empty(session.Editor.FindChapter("ch01")!.Conditions);
+        Assert.Contains("지웠습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        session.Editor.Undo();
+        Assert.Equal(["신뢰높음"], session.Editor.FindChapter("ch01")!.Conditions.Select(item => item.Label));
+    });
+
+    [Fact]
+    public void 길에서_쓰는_조건은_어디인지_보이고_모두_떼고_지운다() => HeadlessUi.Run(() =>
+    {
+        // 한 번에 안 지우고 <b>보여 주고 묻는다</b> — 스탯의 「모두 비우고 지우기」와 같은 결. 떼기는 그 길의 표시조건만 「없음」으로 한다.
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        session.Editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
+        session.Editor.AddEpisode("ch01", "a", title: "a", 0, 0, sceneId: "a");
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "믿는다");
+        session.Editor.UpdateEdge("ch01", "root", "a", visibleConditionLabel: "신뢰높음", matchOptionLabel: "믿는다");
+        Redraw(view);
+
+        Press(Assert.Single(Buttons(Row(view, "condition:신뢰높음"))));
+
+        Assert.Contains(session.Editor.FindChapter("ch01")!.Conditions, item => item.Label == "신뢰높음");
+        Assert.Contains("root → a", session.StatusMessage, StringComparison.Ordinal);   // 상태줄에도 같은 목록
+
+        Control confirm = ConditionConfirm(view);
+        List<string> shown = confirm.GetVisualDescendants().OfType<TextBlock>().Select(block => block.Text ?? string.Empty).ToList();
+        Assert.Contains(shown, text => text.Contains("1곳", StringComparison.Ordinal));
+        Assert.Contains(shown, text => text.Contains("root → a", StringComparison.Ordinal));
+
+        Press(confirm.GetVisualDescendants().OfType<Button>().Single(button => (button.Content as string) == "모두 떼고 지우기"));
+
+        ChapterDocument chapter = session.Editor.FindChapter("ch01")!;
+        Assert.DoesNotContain(chapter.Conditions, item => item.Label == "신뢰높음");
+        Assert.Null(chapter.Edges.Single().VisibleConditionLabel);
+        Assert.Equal("믿는다", chapter.Edges.Single().OptionLabel);   // 길은 남는다
+        Assert.Contains("1개", session.StatusMessage, StringComparison.Ordinal);
+
+        // 되돌리기 한 칸에 조건과 건 자리가 함께 돌아온다.
+        session.Editor.Undo();
+        chapter = session.Editor.FindChapter("ch01")!;
+        Assert.Contains(chapter.Conditions, item => item.Label == "신뢰높음");
+        Assert.Equal("신뢰높음", chapter.Edges.Single().VisibleConditionLabel);
+    });
+
+    [Fact]
     public void 키_칸에_들어서면_세이브가_안_따라온다고_먼저_말한다() => HeadlessUi.Run(() =>
     {
         // <b>키는 세이브의 열쇠다</b> (런타임 회신 §6.2). 저쪽 `LocalSaveFile.Stats`가 이
@@ -324,15 +375,17 @@ public sealed class ChapterSheetEditTests : IDisposable
     });
 
     [Fact]
-    public void 조건_줄은_이름_칸과_식_칸이고_식_칸이_남은_폭을_채운다() => HeadlessUi.Run(() =>
+    public void 조건_줄은_이름_칸과_식_칸과_지우기이고_식_칸이_남은_폭을_채운다() => HeadlessUi.Run(() =>
     {
-        // 지우는 것은 [대본] 탭이다(writer-fields W4) — 줄에는 지우기 단추가 없다. 이름은 칸에서 고친다(writer-comfort WC4 — ⛔ 그 전에는 읽기만 했다).
-        // 더하기는 표 아래 늘 서 있는 줄이다(⛔ 2026-11-18 side-tabs V2의 [＋ 조건] 플라이아웃은 WC4로 걷혔다).
+        // 줄 끝에 [✕]가 선다 — 스탯 줄과 같다(⛔ 2026-11-26까지 지우기는 [대본] 탭의 일이었다 · writer-fields W4). 이름은 칸에서 고친다
+        // (writer-comfort WC4 — ⛔ 그 전에는 읽기만 했다). 더하기는 표 아래 늘 서 있는 줄이다(⛔ 2026-11-18 side-tabs V2의 [＋ 조건] 플라이아웃은 WC4로 걷혔다).
         (ChapterGraphView view, _) = Show();
         Panel row = Row(view, "condition:신뢰높음");
         StackPanel table = view.FindControl<StackPanel>("ConditionListPanel")!;
 
-        Assert.Empty(Buttons(row));
+        Button remove = Assert.Single(Buttons(row));
+        Assert.Equal("✕", remove.Content);
+        AssertInside(remove, table, "[✕]");
         Assert.Equal("＋ 추가", Assert.IsType<Grid>(table.Children[^1]).Children.OfType<Button>().Single().Content);
         Assert.Equal(["신뢰높음", "trust >= 3"], Boxes(row).Select(box => box.Text));
         TextBox expression = Expression(view, "신뢰높음");
@@ -488,7 +541,7 @@ public sealed class ChapterSheetEditTests : IDisposable
     private static IReadOnlyList<TextBox> Boxes(Panel row) =>
         row.GetLogicalDescendants().OfType<TextBox>().ToList();
 
-    /// <summary>그 줄의 단추들 — 스탯이면 [✕] 하나, 조건이면 없다.</summary>
+    /// <summary>그 줄의 단추들 — 스탯이든 조건이든 [✕] 하나.</summary>
     private static IReadOnlyList<Button> Buttons(Panel row) =>
         row.GetLogicalDescendants().OfType<Button>().ToList();
 
@@ -531,6 +584,12 @@ public sealed class ChapterSheetEditTests : IDisposable
             .OfType<StackPanel>()
             .First(panel => panel.GetVisualDescendants().OfType<Button>()
                 .Any(button => (button.Content as string) == "모두 비우고 지우기"));
+
+    /// <summary>열려 있는 조건 [✕] 확인 플라이아웃의 내용 — 목록과 「모두 떼고 지우기」가 산다.</summary>
+    private static Control ConditionConfirm(ChapterGraphView view) =>
+        (TopLevel.GetTopLevel(view) as Window)!.GetVisualDescendants()
+            .OfType<StackPanel>()
+            .Single(panel => Equals(panel.Tag, ChapterGraphView.ConditionRemovePanelTag));
 
     private static void Redraw(ChapterGraphView view)
     {

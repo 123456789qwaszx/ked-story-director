@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Vn.App.Services;
 using Vn.App.Strings;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
@@ -39,7 +40,7 @@ internal sealed class SettingsWindow : Window
         _destinations = session.Destinations;
 
         Title = Ui.Main_Settings;
-        Width = 560;
+        Width = Math.Round(560 * Skin.FontScale);   // 틀의 글자가 커지는 테마에서는 창도 그만큼 넓다(긴 안내 글이 잘리지 않게 · themes)
 
         // 크기 — 끌어서 바꾼다(2026-11-19 소유자 · usability UX1 · ⛔ 그 전에는 고정이었다). 처음 세로는 내용에 맞추되 화면을 넘지 않는다
         // (FitScreen이 MaxHeight를 준다) — 넘는 만큼은 묶음들이 스크롤한다. 사람이 끌어 바꾸면 Avalonia가 내용 맞춤을 끈다 — 그 뒤로는
@@ -54,12 +55,12 @@ internal sealed class SettingsWindow : Window
         BoardSize board = session.Project.Board;
         BoardWidthBox = SideBox(board.Width);
         BoardHeightBox = SideBox(board.Height);
-        BoardNote = new TextBlock { FontSize = 11, TextWrapping = TextWrapping.Wrap, IsVisible = false };
+        BoardNote = new TextBlock { FontSize = Skin.Font(11), TextWrapping = TextWrapping.Wrap, IsVisible = false };
 
         DefaultButton = new Button
         {
             Content = string.Format(Ui.Settings_ResetToDefault, BoardSize.Default.Width, BoardSize.Default.Height),
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Margin = new Thickness(0, 2, 0, 0)
         };
         DefaultButton.Click += (_, _) =>
@@ -73,7 +74,7 @@ internal sealed class SettingsWindow : Window
         HideMinimapCheck = new CheckBox
         {
             Content = Ui.Settings_HideMinimap,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             IsChecked = !session.ShowMinimap
         };
         ToolTip.SetTip(HideMinimapCheck, Ui.Settings_HidesOverviewMapAndZoom);
@@ -82,7 +83,7 @@ internal sealed class SettingsWindow : Window
         BriefGuidesCheck = new CheckBox
         {
             Content = Ui.Settings_FewerHints,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             IsChecked = GuideMode.Brief
         };
         ToolTip.SetTip(BriefGuidesCheck,
@@ -99,7 +100,7 @@ internal sealed class SettingsWindow : Window
         WheelPansCheck = new CheckBox
         {
             Content = Ui.Settings_WheelPansBoard,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             IsChecked = BoardWheel.Pans
         };
         ToolTip.SetTip(WheelPansCheck,
@@ -110,7 +111,7 @@ internal sealed class SettingsWindow : Window
         // 선택지 선 — [대본] 판에 선택지 길 · 분기 선이 생길 때의 꼴(2026-11-26 소유자 — 이름을 「새로 잇는 선」에서)(2026-11-23 소유자 · BoardLines). 누르는 즉시 — 다음에 잇는 선부터 따른다.
         NewLineShapeCombo = new ComboBox
         {
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             ItemsSource = LineShapeNames.Select(item => item.Name).ToList(),
             SelectedIndex = Array.FindIndex(LineShapeNames, item => item.Kind == BoardLines.Kind)
         };
@@ -128,12 +129,12 @@ internal sealed class SettingsWindow : Window
         // 칸 아래와 상태줄이 다시 켜면 바뀐다고 말한다.
         LanguageCombo = new ComboBox
         {
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             ItemsSource = LanguageItems(),
             SelectedIndex = LanguageIndex(AppSettingsService.LoadLanguage())
         };
         ToolTip.SetTip(LanguageCombo, Ui.Settings_LanguageTip);
-        LanguageNote = new TextBlock { FontSize = 11, Opacity = 0.75, TextWrapping = TextWrapping.Wrap, IsVisible = false };
+        LanguageNote = new TextBlock { FontSize = Skin.Font(11), Opacity = Skin.Dim(0.75), TextWrapping = TextWrapping.Wrap, IsVisible = false };
         LanguageCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_Language, () =>
         {
             string? chosen = LanguageCombo.SelectedIndex switch
@@ -155,14 +156,44 @@ internal sealed class SettingsWindow : Window
             }
         });
 
-        ScriptFontCombo = new ComboBox { FontSize = 12, HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = FontNames() };
+        // 테마 — 툴의 색 · 모양(2026-11-26 소유자 · themes — 처음은 맑은 하늘, 바꾸면 다시 켤 때). 언어 칸과 같은 꼴이다: 고르는 즉시 앱 설정에 넣고
+        // 화면은 그대로 두며, 칸 아래와 상태줄이 다시 켜면 바뀐다고 말한다. 차림은 테마 목록(ThemeCatalog.All)을 그대로 돈다.
+        ThemeCombo = new ComboBox
+        {
+            FontSize = Skin.Font(12),
+            ItemsSource = ThemeCatalog.All.Select(theme => theme.Name()).ToList(),
+            SelectedIndex = ThemeIndex(ThemeCatalog.Resolve(AppSettingsService.LoadTheme()))
+        };
+        ToolTip.SetTip(ThemeCombo, Ui.Settings_ThemeTip);
+        ThemeNote = new TextBlock { FontSize = Skin.Font(11), Opacity = Skin.Dim(0.75), TextWrapping = TextWrapping.Wrap, IsVisible = false };
+        ThemeCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_ThemeLabel, () =>
+        {
+            if (ThemeCombo.SelectedIndex is not (>= 0 and var index) || index >= ThemeCatalog.All.Count)
+            {
+                return;
+            }
+
+            ThemeInfo chosen = ThemeCatalog.All[index];
+            AppSettingsService.SaveTheme(chosen.Id);
+
+            bool changes = !ReferenceEquals(chosen, ThemeService.Current);
+            ThemeNote.Text = changes ? string.Format(Ui.Settings_ThemeRestart, chosen.Name()) : string.Empty;
+            ThemeNote.IsVisible = changes;
+
+            if (changes)
+            {
+                _session.SetStatus(ThemeNote.Text);
+            }
+        });
+
+        ScriptFontCombo = new ComboBox { FontSize = Skin.Font(12), HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = FontNames() };
         ScriptFontSizeBox = new NumericUpDown
         {
             Minimum = (decimal)ScriptFont.MinSize,
             Maximum = (decimal)ScriptFont.MaxSize,
             Increment = 1,
             FormatString = "0",
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         ScriptLineSpacingBox = new NumericUpDown
@@ -171,7 +202,7 @@ internal sealed class SettingsWindow : Window
             Maximum = ScriptFont.MaxLineSpacing,
             Increment = 10,
             FormatString = "0",
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         ToolTip.SetTip(ScriptLineSpacingBox,
@@ -190,7 +221,7 @@ internal sealed class SettingsWindow : Window
         ToolTip.SetTip(ScriptPreview, Ui.Settings_PreviewThisIsHowWriting);
         // 굵게 · 글자색 — 새로 만드는 카드의 글(2026-11-23 소유자 — 「설정 창에서 원한다면, Bold로써 굵게 하는 걸 기본값으로 쓸 수도 있게 해줘. 글자 색깔도
         // 같이 조정할 수 있으면 좋겠고」 · writer-formatting WF-D16). 글꼴 · 크기처럼 이미 있는 카드는 그대로다.
-        ScriptBoldCheck = new CheckBox { Content = Ui.Settings_Bold, FontSize = 12 };
+        ScriptBoldCheck = new CheckBox { Content = Ui.Settings_Bold, FontSize = Skin.Font(12) };
         ToolTip.SetTip(ScriptBoldCheck, Ui.Settings_WritesAllTextOfNew);
         ScriptColorChooser = new WriterColorChooser(fill: false, Ui.Settings_ClearTextColorUseTheme);
         var colorFlyout = new Flyout { Content = ScriptColorChooser.Content, Placement = PlacementMode.BottomEdgeAlignedLeft };
@@ -226,7 +257,7 @@ internal sealed class SettingsWindow : Window
         ScriptFontDefaultButton = new Button
         {
             Content = string.Format(Ui.Settings_ResetToDefaultDefaultFont, ScriptFont.DefaultSize, ScriptFont.DefaultLineSpacing),
-            FontSize = 11
+            FontSize = Skin.Font(11)
         };
         FillScriptFont();
 
@@ -246,17 +277,17 @@ internal sealed class SettingsWindow : Window
         string sizeTip = string.Format(Ui.Settings_BaseSizeTip, CardDefaults.MinWidth, CardDefaults.MinWritingHeight);
         BaseWidthBox = CardSizeBox(CardDefaults.MinWidth, CardDefaults.MaxWidth, sizeTip);
         BaseHeightBox = CardSizeBox(CardDefaults.MinWritingHeight, CardDefaults.MaxWritingHeight, sizeTip);
-        FitKeepsSizeCheck = new CheckBox { Content = Ui.Settings_FitKeepsBaseSize, FontSize = 12 };
+        FitKeepsSizeCheck = new CheckBox { Content = Ui.Settings_FitKeepsBaseSize, FontSize = Skin.Font(12) };
         ToolTip.SetTip(FitKeepsSizeCheck, string.Format(Ui.Settings_FitKeepsBaseSizeTip, CardDefaults.MinWidth, CardDefaults.MinWritingHeight));
 
         // 기본 크기로 고정할 때 가로만(2026-11-26 소유자 — 「가로만 활성으로 … 가로영역은 기본크기로 두되, 세로는 세로글 맞춤을 둘 수 있도록」). 누르는 즉시 —
         // 다음에 고정하는 카드부터 따른다.
-        PinWidthOnlyCheck = new CheckBox { Content = Ui.Settings_PinWidthOnly, FontSize = 12 };
+        PinWidthOnlyCheck = new CheckBox { Content = Ui.Settings_PinWidthOnly, FontSize = Skin.Font(12) };
         ToolTip.SetTip(PinWidthOnlyCheck, Ui.Settings_PinWidthOnlyTip);
         BaseSizeDefaultButton = new Button
         {
             Content = string.Format(Ui.Settings_ResetBaseSize, CardDefaults.DefaultWidth, CardDefaults.DefaultWritingHeight),
-            FontSize = 11
+            FontSize = Skin.Font(11)
         };
         FillBaseSize();
         BaseWidthBox.ValueChanged += (_, _) => OnBaseSizeEdited();
@@ -299,8 +330,8 @@ internal sealed class SettingsWindow : Window
                     {
                         // 무엇이 「복제」인지만 말한다 — 저장 위치(runtime.target.json)는 걷었다(Z2).
                         Text = Ui.Settings_AlwaysWrittenToWorkFolder,
-                        FontSize = 11,
-                        Opacity = 0.6,
+                        FontSize = Skin.Font(11),
+                        Opacity = Skin.Dim(0.6),
                         TextWrapping = TextWrapping.Wrap
                     },
                     ExportSection()
@@ -312,7 +343,7 @@ internal sealed class SettingsWindow : Window
         // 스크롤했다(side-fold K2) — 창이 스크롤하게 되면서 스크롤 안의 스크롤이 되어 걷었다).
         ShortcutGroup = new Expander
         {
-            Header = new TextBlock { Text = Ui.Settings_Shortcuts, FontWeight = FontWeight.SemiBold, FontSize = 14 },
+            Header = new TextBlock { Text = Ui.Settings_Shortcuts, FontWeight = FontWeight.SemiBold, FontSize = Skin.Font(14) },
             IsExpanded = false,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Content = ShortcutSection()
@@ -348,7 +379,7 @@ internal sealed class SettingsWindow : Window
                                 Orientation = Orientation.Horizontal,
                                 Spacing = 8,
                                 Margin = new Thickness(0, 4, 0, 0),
-                                Children = { new TextBlock { Text = Ui.Settings_ChoiceLines, FontSize = 12, VerticalAlignment = VerticalAlignment.Center }, NewLineShapeCombo }
+                                Children = { new TextBlock { Text = Ui.Settings_ChoiceLines, FontSize = Skin.Font(12), VerticalAlignment = VerticalAlignment.Center }, NewLineShapeCombo }
                             },
                             new StackPanel
                             {
@@ -357,11 +388,23 @@ internal sealed class SettingsWindow : Window
                                 Margin = new Thickness(0, 4, 0, 0),
                                 Children =
                                 {
-                                    new TextBlock { Text = Ui.Settings_LanguageLabel, FontSize = 12, VerticalAlignment = VerticalAlignment.Center },
+                                    new TextBlock { Text = Ui.Settings_LanguageLabel, FontSize = Skin.Font(12), VerticalAlignment = VerticalAlignment.Center },
                                     LanguageCombo
                                 }
                             },
-                            LanguageNote
+                            LanguageNote,
+                            new StackPanel
+                            {
+                                Orientation = Orientation.Horizontal,
+                                Spacing = 8,
+                                Margin = new Thickness(0, 4, 0, 0),
+                                Children =
+                                {
+                                    new TextBlock { Text = Ui.Settings_ThemeLabel, FontSize = Skin.Font(12), VerticalAlignment = VerticalAlignment.Center },
+                                    ThemeCombo
+                                }
+                            },
+                            ThemeNote
                         }
                     })
                 }
@@ -411,7 +454,7 @@ internal sealed class SettingsWindow : Window
     internal static string ExportTitle => Ui.Settings_ExportTitle;
 
     /// <summary>「내보내기」 머리 — <see cref="ExportTitle"/>.</summary>
-    internal TextBlock ExportHeader { get; } = new() { Text = ExportTitle, FontWeight = FontWeight.SemiBold, FontSize = 14 };
+    internal TextBlock ExportHeader { get; } = new() { Text = ExportTitle, FontWeight = FontWeight.SemiBold, FontSize = Skin.Font(14) };
 
     /// <summary>「단축키」 묶음 — 접고 편다(처음에는 접혀 있다). 읽기만 한다.</summary>
     internal Expander ShortcutGroup { get; }
@@ -437,8 +480,8 @@ internal sealed class SettingsWindow : Window
     internal GuideLine BaseSizeGuide { get; } = new()
     {
         Full = Ui.Settings_BaseSizeGuide,
-        FontSize = 11,
-        Opacity = 0.75,
+        FontSize = Skin.Font(11),
+        Opacity = Skin.Dim(0.75),
         TextWrapping = TextWrapping.Wrap
     };
 
@@ -470,11 +513,11 @@ internal sealed class SettingsWindow : Window
         Height = 14,
         CornerRadius = new CornerRadius(2),
         BorderThickness = new Thickness(1),
-        BorderBrush = new SolidColorBrush(Color.FromArgb(0x66, 0, 0, 0)),
+        BorderBrush = Skin.SwatchBorder.Brush(0x66),
         VerticalAlignment = VerticalAlignment.Center
     };
 
-    private readonly TextBlock _scriptColorText = new() { FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBlock _scriptColorText = new() { FontSize = Skin.Font(12), VerticalAlignment = VerticalAlignment.Center };
 
     /// <summary>글꼴 칸의 맨 위 — 테마의 글꼴을 그대로 쓴다.</summary>
     internal static string DefaultFontName => Ui.Settings_DefaultFont;
@@ -496,6 +539,25 @@ internal sealed class SettingsWindow : Window
 
     /// <summary>언어 칸 아래 — 고른 언어가 지금 화면과 다르면 「다시 켜면 … 바뀝니다」.</summary>
     internal TextBlock LanguageNote { get; }
+
+    /// <summary>「기타」의 테마 칸 — 테마 목록(<see cref="ThemeCatalog.All"/>)의 차례. 고르는 즉시 앱 설정에 들고 다시 켤 때 바뀐다.</summary>
+    internal ComboBox ThemeCombo { get; }
+
+    /// <summary>테마 칸 아래 — 고른 테마가 지금 화면과 다르면 「다시 켜면 … 바뀝니다」.</summary>
+    internal TextBlock ThemeNote { get; }
+
+    private static int ThemeIndex(ThemeInfo theme)
+    {
+        for (int index = 0; index < ThemeCatalog.All.Count; index++)
+        {
+            if (ReferenceEquals(ThemeCatalog.All[index], theme))
+            {
+                return index;
+            }
+        }
+
+        return 0;
+    }
 
     /// <summary>언어 칸의 차림 — 첫째는 PC 언어 따라(지금 그것이 정하는 언어를 붙인다), 그다음 언어마다 그 언어로 적은 이름.</summary>
     private static List<string> LanguageItems() =>
@@ -570,10 +632,10 @@ internal sealed class SettingsWindow : Window
     /// <summary>보낼 곳을 받지 않은 까닭 — 받지 않았을 때만 보인다.</summary>
     internal TextBlock ExportNote { get; } = new()
     {
-        FontSize = 11,
+        FontSize = Skin.Font(11),
         TextWrapping = TextWrapping.Wrap,
         IsVisible = false,
-        Foreground = new SolidColorBrush(Color.Parse("#B9770E"))
+        Foreground = Skin.Warning.Brush()
     };
 
     /// <summary>
@@ -700,7 +762,7 @@ internal sealed class SettingsWindow : Window
             panel.Children.Add(new TextBlock
             {
                 Text = Ui.Settings_SaveProjectFirstToChoose2,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 TextWrapping = TextWrapping.Wrap
             });
         }
@@ -724,7 +786,7 @@ internal sealed class SettingsWindow : Window
             var label = new HyperlinkButton
             {
                 Content = ExportDestinations.LabelOf(format),
-                FontSize = 12,
+                FontSize = Skin.Font(12),
                 Padding = new Thickness(0),
                 VerticalAlignment = VerticalAlignment.Center,
                 Tag = $"export-show:{format}"
@@ -738,7 +800,7 @@ internal sealed class SettingsWindow : Window
             // ⛔ 그 전에는 상대 경로 글(비면 「(보내지 않음)」) · [고르기…] · [✕]였다.
             var box = new TextBox
             {
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 VerticalAlignment = VerticalAlignment.Center,
                 PlaceholderText = format == ExportFormat.Progression
                     ? Ui.Settings_NotCopiedBrowseToGame
@@ -756,7 +818,7 @@ internal sealed class SettingsWindow : Window
                 }
             };
 
-            var browse = new Button { Content = Ui.Settings_Browse, FontSize = 11, Tag = $"export-browse:{format}" };
+            var browse = new Button { Content = Ui.Settings_Browse, FontSize = Skin.Font(11), Tag = $"export-browse:{format}" };
             browse.Click += async (_, _) =>
             {
                 if (await PickFolderAsync(string.Format(Ui.Settings_MirrorFolder, ExportDestinations.LabelOf(format)), format) is { } folder)
@@ -768,10 +830,10 @@ internal sealed class SettingsWindow : Window
             // 없는 폴더는 칸 아래에 알린다(만들지 않는다).
             var missing = new TextBlock
             {
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 TextWrapping = TextWrapping.Wrap,
                 IsVisible = false,
-                Foreground = new SolidColorBrush(Color.Parse("#B9770E"))
+                Foreground = Skin.Warning.Brush()
             };
 
             _destinationBoxes[format] = box;
@@ -789,8 +851,8 @@ internal sealed class SettingsWindow : Window
         panel.Children.Add(new TextBlock
         {
             Text = Ui.Settings_MirrorFolderForProgressionJSON,
-            FontSize = 11,
-            Opacity = 0.7,
+            FontSize = Skin.Font(11),
+            Opacity = Skin.Dim(0.7),
             TextWrapping = TextWrapping.Wrap
         });
         panel.Children.Add(ExportNote);
@@ -872,12 +934,12 @@ internal sealed class SettingsWindow : Window
             Spacing = 6,
             Children =
             {
-                new TextBlock { Text = Ui.Settings_ScriptBoardSize, FontWeight = FontWeight.SemiBold, FontSize = 12 },
+                new TextBlock { Text = Ui.Settings_ScriptBoardSize, FontWeight = FontWeight.SemiBold, FontSize = Skin.Font(12) },
                 new TextBlock
                 {
                     Text = string.Format(Ui.Settings_AllChaptersCardsSitOn, BoardSize.Minimum, BoardSize.Maximum),
-                    FontSize = 11,
-                    Opacity = 0.7,
+                    FontSize = Skin.Font(11),
+                    Opacity = Skin.Dim(0.7),
                     TextWrapping = TextWrapping.Wrap
                 },
                 grid,
@@ -922,7 +984,7 @@ internal sealed class SettingsWindow : Window
         BoardNote.IsVisible = notes.Count > 0;
         if (plan.MovedCards > 0)
         {
-            BoardNote.Foreground = new SolidColorBrush(Color.Parse("#B9770E"));
+            BoardNote.Foreground = Skin.Warning.Brush();
         }
         else
         {
@@ -1006,7 +1068,7 @@ internal sealed class SettingsWindow : Window
             Maximum = (decimal)maximum,
             Increment = 10,
             FormatString = "0",
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         ToolTip.SetTip(box, tip);
@@ -1125,13 +1187,13 @@ internal sealed class SettingsWindow : Window
         Increment = 1000,
         Value = (decimal)value,
         FormatString = "N0",
-        FontSize = 12,
+        FontSize = Skin.Font(12),
         HorizontalAlignment = HorizontalAlignment.Stretch
     };
 
     private static void AddRow(Grid grid, int row, string label, Control box)
     {
-        var text = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, FontSize = 12 };
+        var text = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, FontSize = Skin.Font(12) };
         Grid.SetRow(text, row);
         Grid.SetRow(box, row);
         Grid.SetColumn(box, 1);
@@ -1155,7 +1217,7 @@ internal sealed class SettingsWindow : Window
                 Place(grid, new TextBlock
                 {
                     Text = PlatformKeys.Label(entry.Keys),   // 맥에서는 ⌘ · ⌫로 보인다
-                    FontSize = 11,
+                    FontSize = Skin.Font(11),
                     FontWeight = FontWeight.SemiBold,
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(0, 2, 8, 2)
@@ -1163,8 +1225,8 @@ internal sealed class SettingsWindow : Window
                 Place(grid, new TextBlock
                 {
                     Text = entry.Does,
-                    FontSize = 11,
-                    Opacity = 0.8,
+                    FontSize = Skin.Font(11),
+                    Opacity = Skin.Dim(0.8),
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(0, 2)
                 }, index, 1);
@@ -1175,7 +1237,7 @@ internal sealed class SettingsWindow : Window
                 Spacing = 2,
                 Children =
                 {
-                    new TextBlock { Text = place.Name, FontSize = 12, FontWeight = FontWeight.SemiBold },
+                    new TextBlock { Text = place.Name, FontSize = Skin.Font(12), FontWeight = FontWeight.SemiBold },
                     grid
                 }
             });
@@ -1187,7 +1249,7 @@ internal sealed class SettingsWindow : Window
     /// <summary>묶음 하나 — 머리(이름)와 그 아래 설정들. ⛔ 머리 아래 「어디에 저장되는가」 줄은 2026-11-18에 걷었다(Z2).</summary>
     private static Control Group(string title, Control body) => new Border
     {
-        BorderBrush = new SolidColorBrush(Color.FromArgb(60, 128, 128, 128)),
+        BorderBrush = Skin.Hairline.Brush(60),
         BorderThickness = new Thickness(1),
         CornerRadius = new CornerRadius(4),
         Padding = new Thickness(12, 10),
@@ -1196,7 +1258,7 @@ internal sealed class SettingsWindow : Window
             Spacing = 8,
             Children =
             {
-                new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, FontSize = 14 },
+                new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, FontSize = Skin.Font(14) },
                 body
             }
         }

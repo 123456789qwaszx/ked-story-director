@@ -5,7 +5,7 @@
     <Grid RowDefinitions="Auto,Auto,*">
         <Border Grid.Row="0"
                 Padding="12,10"
-                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                BorderBrush="{DynamicResource Divider}"
                 BorderThickness="0,0,0,1">
             <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="*,Auto">
@@ -14,7 +14,7 @@
                     <CheckBox Grid.Column="1"
                               x:Name="HideEmptyChoicesBox"
                               Content="{x:Static s:Ui.Dialogue_HideEmptyChoices}"
-                              FontSize="11"
+                              FontSize="{DynamicResource TextSm}"
                               Margin="8,0,0,0"
                               VerticalAlignment="Center"
                               IsVisible="False"
@@ -25,27 +25,32 @@
                 <StackPanel x:Name="BranchConditionHost" Spacing="3" IsVisible="False" />
 
                 <TextBlock x:Name="ProblemText"
-                           FontSize="11"
-                           Foreground="#C2410C"
+                           FontSize="{DynamicResource TextSm}"
+                           Foreground="{DynamicResource ProblemInk}"
                            TextWrapping="Wrap"
                            IsVisible="False" />
             </StackPanel>
         </Border>
 
         <!-- 열 머리(# · 화자 · 대사)와 그 오른쪽 빈 곳의 [줄 추가] — 목록과 함께 흐르지 않고 위에 선다(줄이 길어져도 단추가 보인다).
-             앞 세 열은 줄 카드의 열(DialogueNodeEditor.RowColumns)과 같고, 왼쪽은 목록 여백(12) + 카드의 선택 띠 · 여백 · 안쪽 여백(13)만큼 들어간다. -->
-        <Grid Grid.Row="1"
-              x:Name="ColumnHeader"
-              ColumnDefinitions="30,96,*,Auto"
-              Margin="25,6,12,0">
-            <TextBlock Grid.Column="0" Text="#" FontSize="9" Opacity="0.45" VerticalAlignment="Bottom" />
-            <TextBlock Grid.Column="1" Text="{x:Static s:Ui.Dialogue_Speaker}" FontSize="9" Opacity="0.45" VerticalAlignment="Bottom" />
-            <TextBlock Grid.Column="2" Text="{x:Static s:Ui.Dialogue_Dialogue}" FontSize="9" Opacity="0.45" VerticalAlignment="Bottom" />
-            <Button Grid.Column="3"
-                    x:Name="AddLineButton"
-                    Content="{x:Static s:Ui.Dialogue_AddLine}"
-                    FontSize="11" />
-        </Grid>
+             앞 세 열은 줄 카드의 열(DialogueNodeEditor.RowColumns)과 같고, 왼쪽은 목록 여백(12) + 카드의 선택 띠 · 여백 · 안쪽 여백(13)만큼 들어간다.
+             아래에 구분선을 긋는다(2026-11-26 — 선이 없으면 반쯤 스크롤된 줄의 글자 아랫부분이 머리 글자 바로 밑에 붙어 「대사」 옆에 겹친 글자처럼
+             보였다). 머리 글자는 [줄 추가]와 가운데를 맞춘다. -->
+        <Border Grid.Row="1"
+                Padding="25,6,12,6"
+                BorderBrush="{DynamicResource Divider}"
+                BorderThickness="0,0,0,1">
+            <Grid x:Name="ColumnHeader"
+                  ColumnDefinitions="30,96,*,Auto">
+                <TextBlock Grid.Column="0" Text="#" FontSize="{DynamicResource TextXxs}" Opacity="{DynamicResource Dim45}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{x:Static s:Ui.Dialogue_Speaker}" FontSize="{DynamicResource TextXxs}" Opacity="{DynamicResource Dim45}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{x:Static s:Ui.Dialogue_Dialogue}" FontSize="{DynamicResource TextXxs}" Opacity="{DynamicResource Dim45}" VerticalAlignment="Center" />
+                <Button Grid.Column="3"
+                        x:Name="AddLineButton"
+                        Content="{x:Static s:Ui.Dialogue_AddLine}"
+                        FontSize="{DynamicResource TextSm}" />
+            </Grid>
+        </Border>
 
         <!-- 이 편집기는 대사 편집 하나다. 긴 대본은 카드 안 글 칸에 붙여 넣는다. -->
         <!-- Background이 있어야 카드 아래 빈 공간이 우클릭을 받는다. -->

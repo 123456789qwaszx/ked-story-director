@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\app.ico" />
+    <!-- 테마가 싣는 글꼴(themes) — 「파스텔 하늘」의 Pretendard · Jua Story Director · 나눔고딕(SIL OFL 1.1 — THIRD-PARTY-NOTICES.txt의 B-4 · B-2 · B-3)과 아이콘 글꼴. 테마 폴더 안에 둔다. -->
+    <AvaloniaResource Include="Themes\**\Fonts\*.ttf" />
   </ItemGroup>
 
   <!-- 화면 문구 표(2026-11-25 · english-ui E1) — Strings/Ui.resx(한국어 · 기본)와 Ui.en.resx(영어). 빌드가 표에서

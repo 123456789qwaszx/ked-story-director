@@ -11,6 +11,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Text;
 using Vn.App.Strings;
@@ -334,7 +335,7 @@ public partial class ChapterGraphView : UserControl
             var link = new Button
             {
                 Content = (root ? "⌂ " : "· ") + episodeId,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 Padding = new Thickness(6, 2),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
@@ -369,7 +370,7 @@ public partial class ChapterGraphView : UserControl
     {
         SelectEdgeKey(from, to, label);
 
-        if (clickCount >= 2 && _selectedChapterId is { } chapterId)
+        if (Clicks.IsDouble(clickCount) && _selectedChapterId is { } chapterId)
         {
             ChoiceOpened?.Invoke(chapterId, from, to, label);
         }
@@ -803,8 +804,8 @@ public partial class ChapterGraphView : UserControl
             {
                 Full = Ui.Structure_NoSpeakersYetSpeakerNames,
                 Brief = Ui.Speakers_NoSpeakersYet,   // 설명 간소화(brief-guides G1)
-                FontSize = 10,
-                Opacity = 0.55,
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.55),
                 TextWrapping = TextWrapping.Wrap
             });
             return;
@@ -824,7 +825,7 @@ public partial class ChapterGraphView : UserControl
                     (> 0, _) => Plural.Format(Ui.Structure_SpeakersWithoutCharacterKeyTheir, missing),
                     _ => Plural.Format(Ui.Structure_SpeakersWithTemporaryKeyTemp, temporary)
                 },
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Foreground = UnlockConditionInk,   // 같은 호박색 — 「아직 비었다」
                 TextWrapping = TextWrapping.Wrap,
                 Tag = "speaker-missing-keys"
@@ -849,7 +850,7 @@ public partial class ChapterGraphView : UserControl
         var name = new TextBlock
         {
             Text = missing || temporary ? "⚠ " + speakerName : speakerName,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
             Tag = "speaker-name:" + speakerName
@@ -863,7 +864,7 @@ public partial class ChapterGraphView : UserControl
         {
             Text = speaker.CharacterId,
             Margin = new Thickness(6, 0, 0, 0),
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             PlaceholderText = Ui.Structure_CharacterKey,
             Tag = "speaker-key:" + speakerName
         };
@@ -1123,6 +1124,7 @@ public partial class ChapterGraphView : UserControl
 
         _zoom = Math.Clamp(zoom, MinZoom, MaxZoom);
         ZoomHost.LayoutTransform = new ScaleTransform(_zoom, _zoom);
+        ScaleEdgeLabels();
         ZoomText.Text = $"{Math.Round(_zoom * 100)}%";
         ZoomResetButton.IsVisible = Math.Abs(_zoom - 1) > 0.001;
         _centerSheet = true;   // 배율이 바뀌면 판이 화면보다 작은 쪽은 가운데에 다시 선다
@@ -1132,6 +1134,53 @@ public partial class ChapterGraphView : UserControl
         GraphScroll.Offset = new Vector(
             Math.Max(0, (content.X * _zoom) + _sheetOffset.X - pivot.X),
             Math.Max(0, (content.Y * _zoom) + _sheetOffset.Y - pivot.Y));
+    }
+
+    /// <summary>
+    /// 선택지 문구 상자의 배수 — 판을 줄여도 화면에서 100%일 때보다 작아지지 않는다(2026-11-27 소유자 — 「구성탭에서는 저 간선 중앙에 있는 선택지 문구가
+    /// 중요한데, 현재는 … 배율을 축소해서 넓은 화면을 볼 때, 저 선택지 문구가 잘 보이지 않습니다」). [대본] 판의 챕터 · 장면 이름표와 같은 바닥이다
+    /// (design/board-zoom.md 4절 — 「판에서의 크기 × 배율, 단 화면 최소」). 상자는 제 가운데(선 위의 그 자리)를 축으로 커지므로 선을 떠나지 않는다.
+    /// 100% 이상에서는 판과 함께 커진다(1). ⛔ 그 전에는 판과 함께 줄어 40%에서 4px 글자였다.
+    /// </summary>
+    internal double EdgeLabelScale => Math.Max(1, 1 / _zoom);
+
+    /// <summary>그 배율로(화면 가운데를 축으로) — 시험이 판을 줄인다.</summary>
+    internal void ZoomTo(double zoom) => ApplyZoom(zoom, anchor: null);
+
+    /// <summary>판의 선택지 문구 상자에 지금 배수를 입힌다 — 배율이 바뀔 때 · 문구를 새로 그었을 때.</summary>
+    private void ScaleEdgeLabels()
+    {
+        foreach (Control label in GraphCanvas.Children)
+        {
+            if (label.Tag is EdgeLabelMark)
+            {
+                label.RenderTransform = EdgeLabelTransform(default);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 선택지 문구 상자의 그리기 변환 — 배수(<see cref="EdgeLabelScale"/> · 가운데를 축으로)에 끄는 동안의 옮김(<paramref name="by"/>)을 겹친다. 둘 다 없으면 없다.
+    /// </summary>
+    private Transform? EdgeLabelTransform(Vector by)
+    {
+        double scale = EdgeLabelScale;
+        bool moved = Math.Abs(by.X) >= 0.01 || Math.Abs(by.Y) >= 0.01;
+
+        if (scale <= 1.0001)
+        {
+            return moved ? new TranslateTransform(by.X, by.Y) : null;
+        }
+
+        var group = new TransformGroup();
+        group.Children.Add(new ScaleTransform(scale, scale));
+
+        if (moved)
+        {
+            group.Children.Add(new TranslateTransform(by.X, by.Y));
+        }
+
+        return group;
     }
 
     /// <summary>
@@ -1592,9 +1641,12 @@ public partial class ChapterGraphView : UserControl
         DrawEpisodeRails(model);
         DrawBranchMarkers();
 
+        // 장면 색 — [대본] 판 · 하이어아키와 같은 셈이다(고른 칸이 먼저, 그 밖은 자동 · design/scene-colors.md). 두 탭에서 같은 장면이 한 색이다.
+        IReadOnlyDictionary<string, int> sceneColors = SceneColors.Of(ChapterSceneGrouping.Of(model), model.SceneNotes);
+
         foreach (ChapterEpisode episode in model.Episodes)
         {
-            DrawPart([episode.EpisodeId], () => DrawEpisode(model, episode), redrawable: false);
+            DrawPart([episode.EpisodeId], () => DrawEpisode(model, episode, sceneColors), redrawable: false);
         }
 
         // 칩은 카드 위에 선다 — 카드 사이가 좁으면 옆 카드에 걸치는데, 그래도 읽히고 눌려야 한다(자리는 에피소드를 옮겨 낸다).
@@ -1824,7 +1876,7 @@ public partial class ChapterGraphView : UserControl
             CornerRadius = new CornerRadius(4),
             BorderThickness = new Thickness(1.2),
             BorderBrush = accent,
-            Background = new SolidColorBrush(Color.Parse("#F4F2FA")),
+            Background = Skin.StructureBranchChipSurface.Brush(),
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
             Child = BranchChipText(name, state.Label),
             Tag = new BranchCardMark(nodeId, EpisodeNaming.BranchTitleOf(card))
@@ -1845,8 +1897,8 @@ public partial class ChapterGraphView : UserControl
             e.Handled = true; // 캔버스(빈 공간 = 선택 해제 · 범위 선택)까지 흘러가면 곧바로 풀린다
             UiGuard.Run(_session, Ui.Structure_SelectBranchCard, () => SelectBranchCard(nodeId));
 
-            // 두 번 누름 — 에피소드 카드처럼 셸에 알린다([대본] 탭의 그 분기 카드로).
-            if (e.ClickCount >= 2)
+            // 두 번 누름 — 에피소드 카드처럼 셸에 알린다([대본] 탭의 그 분기 카드로). 짝수째 누름만이다(<see cref="Clicks"/>).
+            if (Clicks.IsDouble(e))
             {
                 BranchCardOpened?.Invoke(nodeId);
             }
@@ -1866,7 +1918,7 @@ public partial class ChapterGraphView : UserControl
         {
             Text = $"⑂ {name}",
             FontSize = 10.5,
-            Foreground = new SolidColorBrush(Color.Parse("#3B3F46")),
+            Foreground = Skin.StructureInk.Brush(),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis
         };
@@ -1886,7 +1938,7 @@ public partial class ChapterGraphView : UserControl
                 {
                     Text = string.Format(Ui.Structure_Condition, condition),
                     FontSize = 9.5,
-                    Foreground = new SolidColorBrush(Color.Parse("#6B6F76")),
+                    Foreground = Skin.StructureInkSoft.Brush(),
                     TextTrimming = TextTrimming.CharacterEllipsis
                 },
                 nameLine
@@ -1963,7 +2015,7 @@ public partial class ChapterGraphView : UserControl
     internal const string EmptySlotTag = "empty-slot:";
 
     /// <summary>빈 선택지 칸 점의 테두리 — 고르면 파랗게 굵어지고 풀리면 이리 돌아온다.</summary>
-    private static readonly IBrush EmptySlotBrush = new SolidColorBrush(Color.Parse("#7F8A96"));
+    private static IBrush EmptySlotBrush => Skin.StructureSlot.Brush();
 
     /// <summary>판에 선 빈 선택지 칸 점들 — (에피소드, 칸).</summary>
     private readonly Dictionary<(string Episode, int Index), Ellipse> _emptySlotDots = new();
@@ -2043,8 +2095,8 @@ public partial class ChapterGraphView : UserControl
         // 색이 말하는 것은 하나뿐이다 — 관문이 걸렸나(주황) 아닌가(회색). 픽스처 경로를
         // 초록으로 칠하던 갈래는 2026-08-24에 걷혔다.
         IBrush stroke = edge.ConditionLabel is null
-            ? new SolidColorBrush(Color.Parse("#8894A0"))
-            : new SolidColorBrush(Color.Parse("#C08A3E"));
+            ? Skin.StructureEdge.Brush()
+            : Skin.StructureEdgeConditioned.Brush();
         const double thickness = 1.6;
 
         var segments = new List<Line>();
@@ -2151,8 +2203,7 @@ public partial class ChapterGraphView : UserControl
     {
         string option = EdgeOptionText(edge);
 
-        IBrush ink = new SolidColorBrush(Color.Parse(
-            edge.Auto ? "#3D7BD9" : edge.HasNoOptionLabel ? "#C0392B" : "#5A646E"));
+        IBrush ink = (edge.Auto ? Skin.Accent : edge.HasNoOptionLabel ? Skin.DangerDeep : Skin.StructureEdgeInk).Brush();
 
         // 세 줄이다 — 위는 이 선택지가 언제 보이고(표시조건) 언제 고를 수 있는지(해금조건), 가운데는 문구, 아래는 이 길을
         // 건너면 바뀌는 스탯. 없는 줄은 서지 않는다. 줄이는 것은 문구뿐이다 — 조건과 스탯은 늘 다 보인다.
@@ -2206,10 +2257,13 @@ public partial class ChapterGraphView : UserControl
             tip.Add(Ui.Structure_StatChange + string.Join(" · ", edge.StatChanges.Select(delta => DescribeDelta(delta).Text)));
         }
 
+        // 선 위의 작은 알약 — 옅은 구분선 테두리가 있어 판의 면과 갈린다(2026-11-26 — 디자인 점검 4번 · ⛔ 그 전에는 바탕이 판과 거의 같아 선 위에 맨 글자처럼 보였다).
         var text = new Border
         {
-            Background = new SolidColorBrush(Color.Parse("#F0F4F6F8")),
-            CornerRadius = new CornerRadius(3),
+            Background = Skin.StructureLabelSurface.Brush(),
+            BorderBrush = Skin.Divider.Brush(),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
             Padding = new Thickness(4, 1),
             Child = rows,
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
@@ -2238,6 +2292,10 @@ public partial class ChapterGraphView : UserControl
         _labelRects.Add(spot);
         Canvas.SetLeft(text, spot.X);
         Canvas.SetTop(text, spot.Y);
+
+        // 판을 줄여도 화면에서 100%일 때의 크기 아래로 줄지 않는다(<see cref="EdgeLabelScale"/>) — 제 가운데를 축으로 커진다.
+        text.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
+        text.RenderTransform = EdgeLabelTransform(default);
         GraphCanvas.Children.Add(text);
     }
 
@@ -2249,8 +2307,8 @@ public partial class ChapterGraphView : UserControl
         Stats
     }
 
-    private static readonly IBrush VisibleConditionInk = new SolidColorBrush(Color.Parse("#7A6FB0"));
-    private static readonly IBrush UnlockConditionInk = new SolidColorBrush(Color.Parse("#B06A14"));
+    private static IBrush VisibleConditionInk => Skin.ConditionVisible.Brush();
+    private static IBrush UnlockConditionInk => Skin.ConditionUnlock.Brush();
 
     private static TextBlock LabelPart(string text, double size, IBrush ink) =>
         new() { Text = text, FontSize = size, Foreground = ink };
@@ -2262,7 +2320,7 @@ public partial class ChapterGraphView : UserControl
     private (string Text, IBrush Ink) DescribeDelta(StatDelta delta) =>
     (
         DeltaText(SelectedModel?.Stats, delta),
-        new SolidColorBrush(Color.Parse(delta.IsSet ? "#3D7BD9" : delta.Amount < 0 ? "#C0392B" : "#1F9D55"))
+        (delta.IsSet ? Skin.Accent : delta.Amount < 0 ? Skin.DangerDeep : Skin.Success).Brush()
     );
 
     /// <summary>스탯 변화 하나의 글 — 스탯은 키만 있다(writer-fields W2). [대본] 탭 인스펙터도 같은 말을 쓴다.</summary>
@@ -2304,7 +2362,7 @@ public partial class ChapterGraphView : UserControl
         _lineBase[key] = (stroke, thickness);
     }
 
-    private void DrawEpisode(ChapterGraphModel model, ChapterEpisode episode)
+    private void DrawEpisode(ChapterGraphModel model, ChapterEpisode episode, IReadOnlyDictionary<string, int> sceneColors)
     {
         // 모델의 오류든 도달 불가든 노드에는 같은 ⚠로 선다 — 기획자에게는 둘 다 "고칠 것"이다.
         bool hasError = model.EpisodeHasError(episode) || IsUnreachable(episode);
@@ -2319,8 +2377,9 @@ public partial class ChapterGraphView : UserControl
 
         if (model.IsSceneRoot(episode))
         {
-            // 「장면 시작점」(2026-11-18 소유자 — ⛔ 같은 날 H2에서 「시작점」으로 줄였다가 되돌렸다).
-            Border root = CardChip(Ui.Structure_SceneStart, "#3D7BD9", FontWeight.Bold);
+            // 「장면 시작점」(2026-11-18 소유자 — ⛔ 같은 날 H2에서 「시작점」으로 줄였다가 되돌렸다). 색은 [대본]의 장면 첫 에피소드와 같은 시작의 색이다
+            // (2026-11-26 — ⛔ 그 전에는 강조색이었는데, 강조색은 「고른 것」의 파랑이다).
+            Border root = CardChip(Ui.Structure_SceneStart, Skin.SceneRootAccent, FontWeight.Bold);
             ToolTip.SetTip(root, start
                 ? Ui.Structure_StartingEpisodeAndSceneStart
                 : Ui.Structure_SceneStartEnteredFromAnother);
@@ -2328,12 +2387,19 @@ public partial class ChapterGraphView : UserControl
         }
 
         // 장면ID만(2026-11-18 소유자 · ⛔ 그 전에는 「장면 · {장면ID}」) — 「ID로 보기」를 끄면 장면 이름. 무엇인지는 툴팁이 말한다.
+        //
+        // 꼬리표는 그 장면의 색(점 색 — SceneMark1 ~)이고, 카드 왼쪽 가장자리에 같은 색의 얇은 띠가 선다(<see cref="SceneStripeSurface"/>) — [대본] 판의 장면 면 ·
+        // 하이어아키의 점과 한 색이라 두 탭에서 같은 장면을 색으로 찾는다(design/scene-colors.md ⑥ · 2026-11-27 소유자 — 「권고대로」). [구성] 판에는 장면
+        // 테두리를 그리지 않는다: 카드가 흐름 차례로 서고 따로 옮겨져 한 장면의 카드가 흩어질 수 있어, 감싸는 면은 남의 카드까지 품고 서로 겹친다.
+        // ⛔ 그 전에는 꼬리표가 모든 장면에서 회색(SceneChip)이었다.
+        Color sceneMark = Skin.SceneMarkOf(SceneColors.ColorOf(sceneColors, episode.SceneId));
         Border scene = CardChip(
             showIds ? episode.SceneId : ChapterSceneNotes.NameOf(model.SceneNotes, episode.SceneId) is { Length: > 0 } sceneName
                 ? sceneName
                 : episode.SceneId,
-            "#6B5CA5",
+            sceneMark,
             FontWeight.SemiBold);
+        scene.Tag = SceneChipTag;
         ToolTip.SetTip(scene, string.Format(Ui.Structure_SceneEpisodesWithSameScene, episode.SceneId));
         header.Children.Add(scene);
 
@@ -2351,7 +2417,7 @@ public partial class ChapterGraphView : UserControl
             {
                 Text = "⚠",
                 FontSize = 11,
-                Foreground = Brushes.IndianRed,
+                Foreground = Skin.DangerText.Brush(),
                 VerticalAlignment = VerticalAlignment.Center
             });
         }
@@ -2427,12 +2493,13 @@ public partial class ChapterGraphView : UserControl
             //   키를 늘릴 이유가 없다. v4까지는 선택지 줄마다 18px씩 자랐다. 스탯 줄 수로는 자란다(UX3).
             Height = CardHeightOf(episode.EpisodeId),
             Padding = new Thickness(9, 7),
-            CornerRadius = new CornerRadius(5),
+            CornerRadius = new CornerRadius(Skin.StructureCardRadius),
+            BoxShadow = Skin.CardShadow,
             BorderThickness = new Thickness(hasError ? 2 : 1),
             BorderBrush = hasError
-                ? Brushes.IndianRed
-                : new SolidColorBrush(Color.Parse("#7F8A96")),
-            Background = new SolidColorBrush(Color.Parse("#FAFBFCFD")),
+                ? Skin.DangerText.Brush()
+                : Skin.StructureSlot.Brush(),
+            Background = SceneStripeSurface(sceneMark),
             Child = body,
             // 노드 카드임을 EpisodeId로 표시한다. 간선 라벨도 Border라서, 표식이 없으면
             // 검증이 카드와 라벨을 구별하지 못한다.
@@ -2452,7 +2519,7 @@ public partial class ChapterGraphView : UserControl
         if (GatedIncoming(model, episode).Count > 0)
         {
             card.BorderThickness = new Thickness(1.6);
-            card.BorderBrush = new SolidColorBrush(Color.Parse("#C08A3E"));
+            card.BorderBrush = Skin.StructureEdgeConditioned.Brush();
         }
 
 
@@ -2485,7 +2552,7 @@ public partial class ChapterGraphView : UserControl
         {
             GraphCanvas.Children.Add(Dot(
                 EntryDot(x, y),
-                new SolidColorBrush(Color.Parse("#7F8A96")),
+                Skin.StructureSlot.Brush(),
                 filled: false,
                 tip: Ui.Structure_PathsIntoThisEpisodeGather));
         }
@@ -2499,11 +2566,10 @@ public partial class ChapterGraphView : UserControl
             // v12 — 문구가 비면 그것은 길의 종류가 아니라 **고칠 것**이다. 판에서 그 자리를
             // 짚어 주지 않으면 기획자는 빈 칸을 못 찾는다. 이제 그 말을 <b>점의 색</b>이 한다:
             // 파랑=자동 · 빨강=문구 없음 · 주황=이어진 선택지 · 회색 빈 점=아직 안 쓴 칸.
-            IBrush colour = new SolidColorBrush(Color.Parse(
-                wired is null ? "#7F8A96"
-                    : wired.Auto ? "#3D7BD9"
-                    : wired.HasNoOptionLabel ? "#C0392B"
-                    : "#C06A14"));
+            IBrush colour = (wired is null ? Skin.StructureSlot
+                : wired.Auto ? Skin.Accent
+                : wired.HasNoOptionLabel ? Skin.DangerDeep
+                : Skin.ChoiceInk).Brush();
 
             Ellipse port = Dot(
                 new Point(PortX(x, index, slots), y + CardHeightOf(episodeId)),
@@ -2551,7 +2617,7 @@ public partial class ChapterGraphView : UserControl
             Height = PortRadius * 2,
             Stroke = colour,
             StrokeThickness = 1.6,
-            Fill = filled ? colour : Brushes.White,
+            Fill = filled ? colour : Skin.Surface.Brush(),
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
         };
 
@@ -2641,9 +2707,9 @@ public partial class ChapterGraphView : UserControl
 
     private readonly Dictionary<string, double> _cardHeight = new(StringComparer.Ordinal);
 
-    private static readonly IBrush CardNameBrush = new SolidColorBrush(Color.Parse("#1F2933"));
-    private static readonly IBrush StatKeyBrush = new SolidColorBrush(Color.Parse("#2B5D74"));
-    private static readonly IBrush StatValueBrush = new SolidColorBrush(Color.Parse("#123A4D"));
+    private static IBrush CardNameBrush => Skin.CardName.Brush();
+    private static IBrush StatKeyBrush => Skin.StatKey.Brush();
+    private static IBrush StatValueBrush => Skin.StatValue.Brush();
 
     /// <summary>카드의 도착 스탯 줄들을 담은 묶음에 붙는 표식 — 검증이 그 줄들을 집는 손잡이다(줄마다 키 · 값 두 글).</summary>
     internal const string StatLineTag = "episode-stats";
@@ -2658,14 +2724,43 @@ public partial class ChapterGraphView : UserControl
     /// 카드 머리(칩 · 이름)의 글꼴 — <b>한글 먼저</b>(맑은 고딕 → Apple SD Gothic Neo → Noto Sans KR · CJK KR → 앱 기본). 앱 글꼴(Inter)에는 한글이
     /// 없어 한글은 시스템 글꼴로, 라틴(장면ID · EpisodeId)은 Inter로 그려졌다 — 「ID로 보기」를 켜고 끌 때마다 글꼴과 줄 높이가 바뀌었다
     /// (2026-11-18 소유자 — 「글자체자체도 다른 것 같은데」). 한글 글꼴은 라틴 글자도 그리므로 두 모드가 같은 글꼴이다. 앱 전체는 그대로다.
+    /// 테마가 본문 글꼴을 정했으면(「맑은 하늘」 — 한글과 라틴을 함께 짠 Pretendard) 그것이다 — 틀의 글과 [구성] 카드 머리가 한 글꼴이다(2026-11-26 · 디자인 점검 1번).
     /// </summary>
-    internal static readonly FontFamily CardHeadFont =
+    internal static FontFamily CardHeadFont =>
+        Application.Current?.TryGetResource("UiFont", Avalonia.Styling.ThemeVariant.Light, out object? themed) == true && themed is FontFamily font
+            ? font
+            : SystemCardHeadFont;
+
+    private static readonly FontFamily SystemCardHeadFont =
         new("Malgun Gothic, Apple SD Gothic Neo, Noto Sans KR, Noto Sans CJK KR, $Default");
 
     /// <summary>카드 머리 칩 하나 — 높이를 박고(<see cref="CardChipHeight"/>) 글은 가운데에 선다.</summary>
-    private static Border CardChip(string text, string color, FontWeight weight) => new()
+    /// <summary>[구성] 카드의 장면 꼬리표 — 검증이 글자 짐작 없이 집는다.</summary>
+    internal const string SceneChipTag = "scene-chip";
+
+    /// <summary>카드 왼쪽 가장자리의 장면 색 띠 폭(판 단위 · 테두리 밑까지) — 테두리 안에 3이 보인다. 글(안쪽 여백 9)과는 떨어져 선다.</summary>
+    internal const double SceneStripeWidth = 4;
+
+    /// <summary>
+    /// [구성] 카드의 바탕 — 왼쪽 가장자리에 그 장면 색(점 색)의 얇은 띠, 나머지는 카드 면(<see cref="Skin.StructureCardSurface"/>). 띠를 바탕의 끊긴
+    /// 그라데이션으로 그려 카드의 둥근 모서리를 그대로 따르고, 고름 · 오류 · 관문이 바꾸는 테두리와 다투지 않는다(테두리를 바꿔도 띠는 남는다).
+    /// 띠는 얇아 옅은 면 색(SceneTint)으로는 보이지 않는다 — 점처럼 진한 색이다.
+    /// </summary>
+    private static IBrush SceneStripeSurface(Color mark) => new LinearGradientBrush
     {
-        Background = new SolidColorBrush(Color.Parse(color)),
+        StartPoint = new RelativePoint(0, 0, RelativeUnit.Absolute),
+        EndPoint = new RelativePoint(SceneStripeWidth, 0, RelativeUnit.Absolute),
+        GradientStops =
+        {
+            new GradientStop(mark, 0),
+            new GradientStop(mark, 1),
+            new GradientStop(Skin.StructureCardSurface, 1)   // 끝에서 끊기고, 그 뒤는 끝 색(카드 면)이 이어진다
+        }
+    };
+
+    private static Border CardChip(string text, Color color, FontWeight weight) => new()
+    {
+        Background = color.Brush(),
         CornerRadius = new CornerRadius(3),
         Padding = new Thickness(4, 0),
         Height = CardChipHeight,
@@ -2676,7 +2771,7 @@ public partial class ChapterGraphView : UserControl
             FontSize = 9,
             FontWeight = weight,
             FontFamily = CardHeadFont,
-            Foreground = Brushes.White,
+            Foreground = Skin.OnAccent.Brush(),
             VerticalAlignment = VerticalAlignment.Center
         }
     };
@@ -2888,7 +2983,10 @@ public partial class ChapterGraphView : UserControl
 
                 foreach (Control visual in part.Visuals)
                 {
-                    visual.RenderTransform = still ? null : new TranslateTransform(by.X, by.Y);
+                    // 선택지 문구 상자는 제 배수(판을 줄여도 화면에서 작아지지 않는다)를 지킨 채 옮긴다.
+                    visual.RenderTransform = visual.Tag is EdgeLabelMark
+                        ? EdgeLabelTransform(still ? default : by)
+                        : still ? null : new TranslateTransform(by.X, by.Y);
                     visual.IsVisible = true;
                 }
 
@@ -2985,8 +3083,8 @@ public partial class ChapterGraphView : UserControl
             e.Handled = true; // 캔버스(빈 공간 = 선택 해제)로 흘러가면 방금 한 선택이 풀린다
             SelectEpisode(episode.EpisodeId);
 
-            // 두 번 누름 — 끌기를 시작하지 않고 셸에 알린다(첫 누름이 시작한 끌기는 놓을 때 끝났다).
-            if (e.ClickCount >= 2)
+            // 두 번 누름 — 끌기를 시작하지 않고 셸에 알린다(첫 누름이 시작한 끌기는 놓을 때 끝났다). 짝수째 누름만이다(<see cref="Clicks"/>).
+            if (Clicks.IsDouble(e))
             {
                 if (_selectedChapterId is { } chapterId)
                 {
@@ -3498,7 +3596,7 @@ public partial class ChapterGraphView : UserControl
 
         if (_selectedBranchCardId is { } chipId && _branchChips.TryGetValue(chipId, out Border? selectedChip))
         {
-            selectedChip.BorderBrush = new SolidColorBrush(Color.Parse("#3D7BD9"));
+            selectedChip.BorderBrush = Skin.StructureSelection.Brush();
             selectedChip.BorderThickness = new Thickness(2.4);
         }
 
@@ -3510,7 +3608,7 @@ public partial class ChapterGraphView : UserControl
 
         if (_selectedSlot is { } slot && _emptySlotDots.TryGetValue(slot, out Ellipse? selectedDot))
         {
-            selectedDot.Stroke = new SolidColorBrush(Color.Parse("#3D7BD9"));
+            selectedDot.Stroke = Skin.StructureSelection.Brush();
             selectedDot.StrokeThickness = 3;
         }
 
@@ -3519,14 +3617,14 @@ public partial class ChapterGraphView : UserControl
         {
             if (_cardById.TryGetValue(member, out Border? grouped))
             {
-                grouped.BorderBrush = new SolidColorBrush(Color.Parse("#3D7BD9"));
+                grouped.BorderBrush = Skin.StructureSelection.Brush();
                 grouped.BorderThickness = new Thickness(2);
             }
         }
 
         if (_selectedEpisodeId is { } episodeId && _cardById.TryGetValue(episodeId, out Border? selected))
         {
-            selected.BorderBrush = new SolidColorBrush(Color.Parse("#3D7BD9"));
+            selected.BorderBrush = Skin.StructureSelection.Brush();
             selected.BorderThickness = new Thickness(2.4);
         }
 
@@ -3534,7 +3632,7 @@ public partial class ChapterGraphView : UserControl
         {
             foreach (Line line in selectedLines)
             {
-                line.Stroke = new SolidColorBrush(Color.Parse("#3D7BD9"));
+                line.Stroke = Skin.StructureSelection.Brush();
                 line.StrokeThickness = 3.4;
             }
         }
@@ -3839,7 +3937,7 @@ public partial class ChapterGraphView : UserControl
         void Line(string text) => lines.Children.Add(new TextBlock
         {
             Text = text,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             TextWrapping = TextWrapping.Wrap
         });
 
@@ -3868,7 +3966,7 @@ public partial class ChapterGraphView : UserControl
             Margin = new Thickness(22, 0, 0, 4),
             Padding = new Thickness(8, 4),
             BorderThickness = new Thickness(2, 0, 0, 0),
-            BorderBrush = new SolidColorBrush(Color.Parse("#3D7BD9")),
+            BorderBrush = Skin.Accent.Brush(),
             Child = lines
         };
     }
@@ -3901,8 +3999,8 @@ public partial class ChapterGraphView : UserControl
             {
                 Full = Ui.Structure_ThereSNoWayOut,
                 Brief = Ui.Structure_ThereSNoWayOut2,
-                FontSize = 10,
-                Opacity = 0.5,
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.5),
                 TextWrapping = TextWrapping.Wrap
             });
         }
@@ -3920,7 +4018,7 @@ public partial class ChapterGraphView : UserControl
         // 순번 — 화면에 뜨는 차례다(간선 시트의 행 순서). 신원이 아니라 자리 표시다.
         row.Children.Add(new Border
         {
-            Background = new SolidColorBrush(Color.Parse(edge.HasNoOptionLabel ? "#22808080" : "#22C06A14")),
+            Background = (edge.HasNoOptionLabel ? Skin.Hairline : Skin.ChoiceInk).Brush(0x22),
             CornerRadius = new CornerRadius(3),
             Padding = new Thickness(5, 1),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
@@ -3928,8 +4026,8 @@ public partial class ChapterGraphView : UserControl
             Child = new TextBlock
             {
                 Text = (rowIndex + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
-                FontSize = 10,
-                Opacity = 0.8
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.8)
             }
         });
 
@@ -3937,7 +4035,7 @@ public partial class ChapterGraphView : UserControl
         var text = new TextBlock
         {
             Text = $"{label}   → {edge.ToEpisodeId}",
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Opacity = edge.HasNoOptionLabel ? 0.7 : 1,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -4042,7 +4140,7 @@ public partial class ChapterGraphView : UserControl
         var box = new TextBox
         {
             Text = stored,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             PlaceholderText = Ui.Structure_UndecidedAlwaysPassesEG,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
@@ -4076,8 +4174,8 @@ public partial class ChapterGraphView : UserControl
         row.Children.Add(new TextBlock
         {
             Text = Ui.Structure_Expression,
-            FontSize = 10,
-            Opacity = 0.6,
+            FontSize = Skin.Font(10),
+            Opacity = Skin.Dim(0.6),
             Margin = new Thickness(0, 0, 6, 0),
             VerticalAlignment = VerticalAlignment.Center
         });
@@ -4088,7 +4186,7 @@ public partial class ChapterGraphView : UserControl
         TextBlock Note(string text, IBrush? ink = null) => new()
         {
             Text = text,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Opacity = ink is null ? 0.6 : 1,
             Foreground = ink,
             TextWrapping = TextWrapping.Wrap,
@@ -4102,7 +4200,7 @@ public partial class ChapterGraphView : UserControl
                      item.Severity == ChapterDiagnosticSeverity.Error &&
                      item.Message.StartsWith(head, StringComparison.Ordinal)))
         {
-            host.Children.Add(Note("✕ " + problem.Message[head.Length..], new SolidColorBrush(Color.Parse("#C0392B"))));
+            host.Children.Add(Note("✕ " + problem.Message[head.Length..], Skin.DangerDeep.Brush()));
         }
 
         int others = _session.Editor.FindConditionUses(chapterId, label)
@@ -4175,15 +4273,28 @@ public partial class ChapterGraphView : UserControl
     private void ShowConditionFlyout(
         Button anchor, string chapterId, string intro, string createText, Func<string, string, bool> accept)
     {
-        var name = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = Ui.Structure_ConditionNameByMeaningE, Tag = "new-condition-name" };
-        var expression = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = Ui.Structure_ExpressionEmptyMeansUndecidedE, Tag = "new-condition-expression" };
+        var name = new TextBox { FontSize = Skin.Font(11), MinWidth = 240, PlaceholderText = Ui.Structure_ConditionNameByMeaningE, Tag = "new-condition-name" };
+        var expression = new TextBox { FontSize = Skin.Font(11), MinWidth = 240, PlaceholderText = Ui.Structure_ExpressionEmptyMeansUndecidedE, Tag = "new-condition-expression" };
         var create = new Button
         {
             Content = createText,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Padding = new Thickness(7, 2),
             HorizontalAlignment = HorizontalAlignment.Left,
             Tag = "new-condition-create"
+        };
+        create.VerticalAlignment = VerticalAlignment.Center;
+
+        // 만들기 단추 오른쪽의 「식 예시 보기」 — 손을 올리면 이 챕터의 스탯으로 든 예시가 선다(2026-11-26 소유자).
+        var actions = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            Children =
+            {
+                create,
+                ExpressionExamplesLink(_session?.Editor.FindChapter(chapterId)?.Stats ?? [])
+            }
         };
         var panel = new StackPanel
         {
@@ -4191,10 +4302,10 @@ public partial class ChapterGraphView : UserControl
             MaxWidth = 340,
             Children =
             {
-                new TextBlock { Text = intro, FontSize = 10, TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = intro, FontSize = Skin.Font(10), TextWrapping = TextWrapping.Wrap },
                 name,
                 expression,
-                create
+                actions
             }
         };
         var flyout = new Flyout { Content = panel };
@@ -4232,6 +4343,48 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
+    /// 「식 예시 보기」 — 손을 올리면 <b>이 챕터의 스탯으로 든 식 예시</b>가 풍선으로 선다(2026-11-26 소유자 — 「호버를 하면 창이 뜨면서 구체적인
+    /// 예시를 보여주도록」). 글은 검증 보고의 고치는 법과 같은 것(<see cref="ConditionExpressionHelp.Examples"/>)이고 상자 모양도 같다 — 적기 전에
+    /// 보는 예시와 틀린 뒤에 보는 예시가 한 벌이다. 스탯이 아직 없으면 스탯부터 더하라고 말하고 흔한 이름으로 든다.
+    ///
+    /// 풍선은 보통 풍선보다 빨리 뜨고(<see cref="ExamplesShowDelay"/>) 넓다 — 예시의 식 칸이 한 줄에 서야 줄이 맞는다.
+    /// 글자에 손이 닿지 않는 틈에서도 뜨게 투명한 바탕의 상자에 단다.
+    /// </summary>
+    private static Control ExpressionExamplesLink(IReadOnlyList<ChapterStat> stats)
+    {
+        var link = new Border
+        {
+            Background = Brushes.Transparent,
+            Padding = new Thickness(2, 3),
+            VerticalAlignment = VerticalAlignment.Center,
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Help),
+            Tag = ExpressionExamplesTag,
+            Child = new TextBlock
+            {
+                Text = Ui.Structure_ExpressionExamples,
+                FontSize = Skin.Font(10),
+                Foreground = Skin.Accent.Brush(),
+                TextDecorations = TextDecorations.Underline
+            }
+        };
+
+        ToolTip.SetTip(link, new ToolTip
+        {
+            MaxWidth = 640,
+            Content = ExamplesBox(ConditionExpressionHelp.Examples(stats), margin: default)
+        });
+        ToolTip.SetShowDelay(link, ExamplesShowDelay);
+        ToolTip.SetPlacement(link, PlacementMode.BottomEdgeAlignedLeft);
+        return link;
+    }
+
+    /// <summary>「식 예시 보기」 — 화면 시험이 찾는다.</summary>
+    internal const string ExpressionExamplesTag = "expression-examples";
+
+    /// <summary>「식 예시 보기」 풍선이 뜨기까지(ms) — 보통 풍선(400)보다 빠르다. 보려고 손을 올린 자리다.</summary>
+    internal const int ExamplesShowDelay = 150;
+
+    /// <summary>
     /// 분기 카드(칩)의 패널 — 부르는 곳 · 조건(고친다) · 대본(읽기 전용). 분기 선을 고른 것과 같은 조건 칸이다 — 조건은 분기마다가 아니라
     /// 분기 카드의 첫머리에 산다(<see cref="BranchEntryCondition"/>).
     /// </summary>
@@ -4242,8 +4395,8 @@ public partial class ChapterGraphView : UserControl
         BranchFromToPanel.Children.Add(new TextBlock
         {
             Text = Ui.Structure_CalledFrom,
-            FontSize = 11,
-            Opacity = 0.6,
+            FontSize = Skin.Font(11),
+            Opacity = Skin.Dim(0.6),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
         });
 
@@ -4265,8 +4418,8 @@ public partial class ChapterGraphView : UserControl
             BranchFromToPanel.Children.Add(new TextBlock
             {
                 Text = Ui.Structure_NoneNotPlayed,
-                FontSize = 11,
-                Opacity = 0.6,
+                FontSize = Skin.Font(11),
+                Opacity = Skin.Dim(0.6),
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
             });
         }
@@ -4363,9 +4516,9 @@ public partial class ChapterGraphView : UserControl
         var link = new TextBlock
         {
             Text = $"⑂ {name}",
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             TextDecorations = TextDecorations.Underline,
-            Foreground = new SolidColorBrush(Color.Parse("#6B5CA5")),
+            Foreground = Skin.SceneChip.Brush(),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             Background = Brushes.Transparent,
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
@@ -4396,8 +4549,8 @@ public partial class ChapterGraphView : UserControl
         SlotFromPanel.Children.Add(new TextBlock
         {
             Text = Ui.Structure_NoPathYet,
-            FontSize = 11,
-            Opacity = 0.6,
+            FontSize = Skin.Font(11),
+            Opacity = Skin.Dim(0.6),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
         });
         string slotState = options == 0
@@ -4449,9 +4602,9 @@ public partial class ChapterGraphView : UserControl
             Text = title.Length == 0 || string.Equals(title, episodeId, StringComparison.Ordinal)
                 ? episodeId
                 : $"{episodeId} ({title})",
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             TextDecorations = TextDecorations.Underline,
-            Foreground = new SolidColorBrush(Color.Parse("#3D7BD9")),
+            Foreground = Skin.Accent.Brush(),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             Background = Brushes.Transparent,
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
@@ -4623,8 +4776,8 @@ public partial class ChapterGraphView : UserControl
             {
                 Full = Ui.Structure_NoStatsTypeKeyIn,
                 Brief = Ui.Structure_NoStats,
-                FontSize = 10,
-                Opacity = 0.5
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.5)
             });
         }
 
@@ -4687,7 +4840,7 @@ public partial class ChapterGraphView : UserControl
 
         var type = new ComboBox
         {
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             MinHeight = 0,
             Padding = new Thickness(8, 2, 4, 2),
             Margin = new Thickness(4, 0, 0, 0),
@@ -4707,7 +4860,7 @@ public partial class ChapterGraphView : UserControl
         Grid.SetColumn(type, 1);
         head.Children.Add(type);
 
-        var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1), Margin = new Thickness(3, 0, 0, 0) };
+        var remove = new Button { Content = "✕", FontSize = Skin.Font(10), Padding = new Thickness(5, 1), Margin = new Thickness(3, 0, 0, 0) };
         ToolTip.SetTip(remove, Ui.Structure_DeletesItIfItS);
         remove.Click += (_, _) => UiGuard.Run(_session, Ui.Structure_DeleteStat, () => RemoveStat(remove, stat.Key));
         Grid.SetColumn(remove, 2);
@@ -4719,7 +4872,7 @@ public partial class ChapterGraphView : UserControl
         var caution = new TextBlock
         {
             Text = Ui.Structure_KeyIsKeyInSave,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Foreground = UnlockConditionInk,
             TextWrapping = TextWrapping.Wrap,
             IsVisible = false,
@@ -4744,7 +4897,7 @@ public partial class ChapterGraphView : UserControl
 
             var initial = new ComboBox
             {
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 MinHeight = 0,
                 Padding = new Thickness(8, 2, 4, 2),
                 ItemsSource = new[] { Ui.Side_Off2, Ui.Side_On2 },   // ⛔ 「아니오」 · 「예」(usability UX12)
@@ -4779,14 +4932,14 @@ public partial class ChapterGraphView : UserControl
     private static TextBlock ValueLabel(string text) => new()
     {
         Text = text,
-        FontSize = 10,
-        Opacity = 0.7,
+        FontSize = Skin.Font(10),
+        Opacity = Skin.Dim(0.7),
         Margin = new Thickness(6, 0, 3, 0),
         VerticalAlignment = VerticalAlignment.Center
     };
 
     /// <summary>
-    /// 「조건 및 스탯」 탭의 <b>조건 표</b> — 조건마다 <b>이름</b>과 <b>식</b>을 고친다. 지우는 것은 [대본] 탭이다(writer-fields W4).
+    /// 「조건 및 스탯」 탭의 <b>조건 표</b> — 조건마다 <b>이름</b>과 <b>식</b>을 고치고 [✕]로 지운다(⛔ 2026-11-26까지 지우기는 [대본] 탭 · writer-fields W4).
     /// 더하기는 표 아래에 늘 서 있는 줄 — 이름 칸 + [＋ 추가](writer-comfort WC4 — ⛔ [＋ 조건] → 이름과 식을 함께 받는 플라이아웃은 걷었다 ·
     /// 그 전 side-tabs V2). 식이 빈 조건은 「식 미정」(항상 통과)이라 ⚠로 알린다.
     /// </summary>
@@ -4815,8 +4968,8 @@ public partial class ChapterGraphView : UserControl
             {
                 Full = Ui.Structure_NoConditionsTypeNameIn,
                 Brief = Ui.Structure_NoConditions,
-                FontSize = 10,
-                Opacity = 0.5
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.5)
             });
         }
 
@@ -4837,15 +4990,17 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 조건 한 줄 — 이름 칸(고정 폭 <see cref="ConditionLabelWidth"/>) · 식. 식 칸은 남은 폭을 채운다. 지우기는 [대본] 탭의 일이다.
+    /// 조건 한 줄 — 이름 칸(고정 폭 <see cref="ConditionLabelWidth"/>) · 식 · [✕]. 식 칸은 남은 폭을 채운다.
     /// 이름은 그 자리에서 고친다 — 그 이름을 건 간선(표시조건 · 해금조건)이 따라간다(<see cref="ProjectEditor.RenameChapterCondition"/> ·
     /// writer-comfort WC4 — ⛔ 그 전에는 읽기만 했다). 칸에 다 안 들어가는 이름은 마우스를 올리면 다 보인다.
+    /// [✕]는 스탯 줄의 것과 같다 — 아무 데서도 안 쓰면 지우고, 쓰면 어디인지 보이고 한 번 더 묻는다(<see cref="ShowConditionRemoveFlyout"/>).
+    /// ⛔ 2026-11-26까지 지우기는 [대본] 탭의 일이었다(writer-fields W4) — 소유자: 「조건을 추가는 할 수 있는데, 지울 수 없다는 게 조금 아쉽고」.
     /// </summary>
     private Control ConditionRow(ChapterCondition condition)
     {
         var row = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions($"{ConditionLabelWidth},*"),
+            ColumnDefinitions = new ColumnDefinitions($"{ConditionLabelWidth},*,Auto"),
             Tag = $"condition:{condition.Label}"
         };
 
@@ -4883,8 +5038,129 @@ public partial class ChapterGraphView : UserControl
         Grid.SetColumn(expression, 1);
         row.Children.Add(expression);
 
+        var remove = new Button
+        {
+            Content = "✕",
+            FontSize = Skin.Font(10),
+            Padding = new Thickness(5, 1),
+            Margin = new Thickness(3, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = "condition-remove:" + condition.Label
+        };
+        ToolTip.SetTip(remove, Ui.Structure_DeletesItIfItS);
+        remove.Click += (_, _) => UiGuard.Run(_session, Ui.Side_DeleteCondition, () => RemoveCondition(remove, chapterId, condition.Label));
+        Grid.SetColumn(remove, 2);
+        row.Children.Add(remove);
+
         return row;
     }
+
+    /// <summary>조건 [✕] — 안 쓰면 지우고(되돌리기 한 칸), 쓰면 그 자리들을 보이고 한 번 더 묻는다.</summary>
+    private void RemoveCondition(Control anchor, string chapterId, string label)
+    {
+        Vn.Authoring.Editing.ChapterConditionRemoveOutcome outcome = _session!.Editor.RemoveChapterCondition(chapterId, label);
+
+        if (outcome.Applied)
+        {
+            _session.SetStatus(string.Format(Ui.Side_DeletedConditionUndoCtrlZ, label));
+            return;
+        }
+
+        if (outcome.Uses.Count == 0)
+        {
+            throw new InvalidOperationException(outcome.Refusal ?? Ui.Structure_CouldnTDeleteIt);
+        }
+
+        ShowConditionRemoveFlyout(anchor, _session, chapterId, label, outcome);
+    }
+
+    /// <summary>
+    /// 쓰는 조건의 [✕] — 쓰는 곳을 <b>보여 주고</b>, 간선에서만 쓰면 「모두 떼고 지우기」를 내놓는다. [대본] · [구성] 두 탭의 조건 표가 같이 쓴다.
+    /// 상태줄에도 같은 목록이 선다(그 전의 거절 문장 그대로).
+    ///
+    /// 떼기는 그 길의 표시조건 · 해금조건만 「없음」으로 한다 — 길과 잠금 안내문은 남는다. 스탯의 「모두 비우고 지우기」와 같은 결이다
+    /// (<see cref="ShowClearAndDeleteFlyout"/>). 대사 줄의 갈래(조건 블록 · 분기 카드 첫머리)가 쓰면 단추가 없다 — 툴이 대사의 조건을 걷으면
+    /// 작가가 쓴 글의 모양이 바뀐다. 그 자리를 먼저 걷으라고 말한다.
+    /// </summary>
+    internal static void ShowConditionRemoveFlyout(
+        Control anchor,
+        AuthoringSession session,
+        string chapterId,
+        string label,
+        Vn.Authoring.Editing.ChapterConditionRemoveOutcome refused)
+    {
+        session.SetStatus(Explain(refused.Refusal, refused.Uses));
+
+        bool edgesOnly = refused.Uses.All(use => use.Kind == Vn.Authoring.Editing.ChapterUseKind.Edge);
+        var panel = new StackPanel { Spacing = 4, MaxWidth = 420, Tag = ConditionRemovePanelTag };
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = refused.Refusal ?? string.Empty,
+            FontSize = Skin.Font(11),
+            FontWeight = FontWeight.SemiBold,
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        foreach (Vn.Authoring.Editing.ChapterUse use in refused.Uses)
+        {
+            panel.Children.Add(new SelectableTextBlock
+            {
+                Text = $"· {use.Where} — {use.Detail}",
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.75),
+                TextWrapping = TextWrapping.Wrap
+            });
+        }
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = edgesOnly ? Ui.Structure_DetachingSetsJustThat : Ui.Structure_ClearDialogueConditionsFirst,
+            FontSize = Skin.Font(10),
+            Opacity = Skin.Dim(0.6),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 4, 0, 0)
+        });
+
+        var flyout = new Flyout { Content = panel };
+
+        if (edgesOnly)
+        {
+            var detach = new Button
+            {
+                Content = Ui.Structure_DetachAllAndDelete,
+                FontSize = Skin.Font(10),
+                Padding = new Thickness(7, 2),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Tag = "condition-detach-delete"
+            };
+
+            detach.Click += (_, _) =>
+            {
+                flyout.Hide();
+
+                UiGuard.Run(session, Ui.Structure_DetachAndDeleteCondition, () =>
+                {
+                    Vn.Authoring.Editing.ChapterConditionRemoveOutcome done =
+                        session.Editor.RemoveChapterCondition(chapterId, label, clearEdges: true);
+
+                    if (!done.Applied)
+                    {
+                        throw new InvalidOperationException(Explain(done.Refusal, done.Uses));
+                    }
+
+                    session.SetStatus(Plural.Format(Ui.Structure_DeletedConditionDetachedPaths, label, Josa.을를(label), done.EdgesCleared));
+                });
+            };
+
+            panel.Children.Add(detach);
+        }
+
+        flyout.ShowAt(anchor);
+    }
+
+    /// <summary>조건 [✕]의 확인 플라이아웃 — 화면 시험이 찾는다.</summary>
+    internal const string ConditionRemovePanelTag = "condition-remove-panel";
 
     /// <summary>조건 표의 이름 칸 폭 — 「성실 3 이상 · 요령 3 미만」쯤은 다 보인다. 더 길면 칸 안에서 흐르고 손을 올리면 다 보인다.</summary>
     internal const double ConditionLabelWidth = 150;
@@ -4900,7 +5176,7 @@ public partial class ChapterGraphView : UserControl
         var box = new TextBox
         {
             Text = value,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Width = width,
             MinHeight = 0,
             Padding = new Thickness(4, 1),
@@ -4962,7 +5238,7 @@ public partial class ChapterGraphView : UserControl
         var box = new TextBox
         {
             Text = name,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             FontWeight = FontWeight.SemiBold,
             MinHeight = 0,
             MinWidth = 0,
@@ -5008,7 +5284,7 @@ public partial class ChapterGraphView : UserControl
     {
         var box = new TextBox
         {
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             MinHeight = 0,
             Padding = new Thickness(4, 2),
             PlaceholderText = placeholder,
@@ -5017,7 +5293,7 @@ public partial class ChapterGraphView : UserControl
         var button = new Button
         {
             Content = Ui.Speakers_Add,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Padding = new Thickness(7, 2),
             Margin = new Thickness(4, 0, 0, 0),
             VerticalAlignment = VerticalAlignment.Center,
@@ -5095,7 +5371,7 @@ public partial class ChapterGraphView : UserControl
         panel.Children.Add(new TextBlock
         {
             Text = refused.Refusal ?? string.Empty,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             FontWeight = FontWeight.SemiBold,
             TextWrapping = TextWrapping.Wrap
         });
@@ -5105,8 +5381,8 @@ public partial class ChapterGraphView : UserControl
             panel.Children.Add(new SelectableTextBlock
             {
                 Text = $"· {use.Where} — {use.Detail}",
-                FontSize = 10,
-                Opacity = 0.75,
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.75),
                 TextWrapping = TextWrapping.Wrap
             });
         }
@@ -5117,8 +5393,8 @@ public partial class ChapterGraphView : UserControl
                    (refused.Uses.Any(use => use.Kind == Vn.Authoring.Editing.ChapterUseKind.DialogueRead)
                        ? string.Format(Ui.Structure_StatInDialogueIsnT, key)
                        : string.Empty),
-            FontSize = 10,
-            Opacity = 0.6,
+            FontSize = Skin.Font(10),
+            Opacity = Skin.Dim(0.6),
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 4, 0, 0)
         });
@@ -5126,7 +5402,7 @@ public partial class ChapterGraphView : UserControl
         var clear = new Button
         {
             Content = Ui.Structure_ClearAllAndDelete,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Padding = new Thickness(7, 2),
             HorizontalAlignment = HorizontalAlignment.Left
         };
@@ -5353,7 +5629,7 @@ public partial class ChapterGraphView : UserControl
         if (exportNotice is not null)
         {
             DiagnosticsPanel.Children.Add(
-                DiagnosticLine(exportNotice, Brushes.IndianRed, dim: false, bold: true));
+                DiagnosticLine(exportNotice, Skin.DangerText.Brush(), dim: false, bold: true));
         }
 
         // 나간 자리 — 늘 보인다 (2026-11-04 소유자: "내보내기를 어떻게 하지?"). 자동이되 말한다.
@@ -5387,7 +5663,7 @@ public partial class ChapterGraphView : UserControl
             is { } incomplete)
         {
             DiagnosticsPanel.Children.Add(DiagnosticLine(
-                incomplete.Message, Brushes.DarkGoldenrod, dim: false, bold: true));
+                incomplete.Message, Skin.WarningText.Brush(), dim: false, bold: true));
         }
 
         // ⚠ 세는 것은 <b>말할 것이 있는</b> 보고뿐이다 (2026-08-24). 예전에는 보고가
@@ -5402,8 +5678,8 @@ public partial class ChapterGraphView : UserControl
                 Text = model.Episodes.Count == 0
                     ? Ui.Structure_NoEpisodesYetOnceYou
                     : Ui.Structure_NothingToReport,
-                FontSize = 11,
-                Opacity = 0.55
+                FontSize = Skin.Font(11),
+                Opacity = Skin.Dim(0.55)
             });
 
             return;
@@ -5417,8 +5693,8 @@ public partial class ChapterGraphView : UserControl
                 diagnostic.Describe(),
                 diagnostic.Severity switch
                 {
-                    ChapterDiagnosticSeverity.Error => Brushes.IndianRed,
-                    ChapterDiagnosticSeverity.Warning => Brushes.DarkGoldenrod,
+                    ChapterDiagnosticSeverity.Error => Skin.DangerText.Brush(),
+                    ChapterDiagnosticSeverity.Warning => Skin.WarningText.Brush(),
                     _ => null
                 },
                 dim: diagnostic.Severity == ChapterDiagnosticSeverity.Info));
@@ -5434,19 +5710,24 @@ public partial class ChapterGraphView : UserControl
     /// 진단 아래의 고치는 법(<see cref="ChapterDiagnostic.Help"/>) — 연한 바탕의 상자에 고정폭 글꼴로, 예시의 식이 한 칸으로 줄을 선다(2026-11-23 소유자 —
     /// 「구체적인 예시까지 보기좋게 설명」). 고를 수 있고 [보고 복사]에도 든다.
     /// </summary>
-    private static Border DiagnosticHelp(string help) => new()
+    private static Border DiagnosticHelp(string help) => ExamplesBox(help, new Thickness(14, 1, 0, 6), DiagnosticHelpTag);
+
+    /// <summary>
+    /// 식 예시 상자 — 검증 보고의 고치는 법과 「식 예시 보기」 풍선이 같이 쓴다. 고정폭 글꼴이라 예시의 식이 한 칸으로 줄을 선다.
+    /// </summary>
+    private static Border ExamplesBox(string text, Thickness margin, string? tag = null) => new()
     {
-        Tag = DiagnosticHelpTag,
-        Margin = new Thickness(14, 1, 0, 6),
+        Tag = tag,
+        Margin = margin,
         Padding = new Thickness(8, 5),
         CornerRadius = new CornerRadius(4),
         BorderThickness = new Thickness(2, 0, 0, 0),
-        BorderBrush = new SolidColorBrush(Color.Parse("#C9A227")),
-        Background = new SolidColorBrush(Color.Parse("#14808080")),
+        BorderBrush = Skin.NoteBorder.Brush(),
+        Background = Skin.Hairline.Brush(0x14),
         Child = new SelectableTextBlock
         {
-            Text = help,
-            FontSize = 11,
+            Text = text,
+            FontSize = Skin.Font(11),
             FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"),
             TextWrapping = TextWrapping.Wrap,
             FontFeatures = AsTyped
@@ -5495,7 +5776,7 @@ public partial class ChapterGraphView : UserControl
         string text, IBrush? foreground, bool dim, bool bold = false) => new SelectableTextBlock
     {
         Text = text,
-        FontSize = 11,
+        FontSize = Skin.Font(11),
         TextWrapping = TextWrapping.Wrap,
         Foreground = foreground,
         FontWeight = bold ? FontWeight.SemiBold : FontWeight.Normal,

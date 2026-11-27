@@ -13,9 +13,17 @@ namespace Vn.Authoring.Chapters;
 /// </summary>
 public static class ChapterSceneNotes
 {
-    /// <summary>글도 이름도 빈 항목 — 쓰지 않는다.</summary>
+    /// <summary>글도 이름도 색도 빈 항목 — 쓰지 않는다.</summary>
     public static bool IsBlank(ChapterSceneNote note) =>
+        HasNoWords(note) && note.Color is null;
+
+    /// <summary>글도 이름도 없는 항목 — 색만 있거나 빈 것. 주인이 없어지면 남길 까닭이 없다(<see cref="Ordered"/>).</summary>
+    private static bool HasNoWords(ChapterSceneNote note) =>
         string.IsNullOrWhiteSpace(note.Text) && string.IsNullOrWhiteSpace(note.Name);
+
+    /// <summary>그 장면의 고른 색 — 없으면 null(자동).</summary>
+    public static int? ColorOf(IEnumerable<ChapterSceneNote> notes, string sceneId) =>
+        Of(notes, sceneId)?.Color;
 
     /// <summary>그 장면의 메모 글 — 없거나 비었으면 null.</summary>
     public static string? TextOf(IEnumerable<ChapterSceneNote> notes, string sceneId) =>
@@ -29,7 +37,10 @@ public static class ChapterSceneNotes
     public static bool IsOwned(IReadOnlyList<ChapterEpisode> episodes, string sceneId) =>
         episodes.Any(episode => string.Equals(episode.SceneId, sceneId, StringComparison.Ordinal));
 
-    /// <summary>쓰는 차례 — 주인 있는 메모를 장면이 처음 나오는 차례로, 그 뒤에 주인 없는 메모를 열쇠 차례로. 빈 메모는 뺀다.</summary>
+    /// <summary>
+    /// 쓰는 차례 — 주인 있는 메모를 장면이 처음 나오는 차례로, 그 뒤에 주인 없는 메모를 열쇠 차례로. 빈 메모는 뺀다. 색만 있는 항목은 주인이 없으면
+    /// 뺀다 — 작가의 글이 아니라 남겨 알릴 것이 없다(장면이 사라지면 그 색도 함께 간다).
+    /// </summary>
     public static List<ChapterSceneNote> Ordered(
         IReadOnlyList<ChapterEpisode> episodes, IEnumerable<ChapterSceneNote> notes)
     {
@@ -53,7 +64,7 @@ public static class ChapterSceneNotes
             }
         }
 
-        ordered.AddRange(byScene.Values.OrderBy(note => note.SceneId, StringComparer.Ordinal));
+        ordered.AddRange(byScene.Values.Where(note => !HasNoWords(note)).OrderBy(note => note.SceneId, StringComparer.Ordinal));
         return ordered;
     }
 

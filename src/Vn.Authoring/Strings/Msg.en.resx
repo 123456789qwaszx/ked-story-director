@@ -1361,4 +1361,22 @@
   <data name="Edit_StatItem" xml:space="preserve">
     <value>stat '{0}'</value>
   </data>
+  <data name="File_ColorOfSceneNote" xml:space="preserve">
+    <value>color of a scene note</value>
+  </data>
+  <data name="File_SceneColorOutOfRange" xml:space="preserve">
+    <value>Scene '{0}' has color {1} — it must be one of 1–{2}.</value>
+  </data>
+  <data name="Edit_SceneColorOutOfRange" xml:space="preserve">
+    <value>Scene color {0} isn't in the palette — it must be one of 1–{1}.</value>
+  </data>
+  <data name="File_RgbOfSceneNote" xml:space="preserve">
+    <value>rgb of a scene note</value>
+  </data>
+  <data name="File_SceneRgbInvalid" xml:space="preserve">
+    <value>Scene '{0}' has rgb '{1}' — it must look like #RRGGBB (e.g. #4A90D9).</value>
+  </data>
+  <data name="File_SceneColorAndRgb" xml:space="preserve">
+    <value>Scene '{0}' has both color and rgb — write only one.</value>
+  </data>
 </root>

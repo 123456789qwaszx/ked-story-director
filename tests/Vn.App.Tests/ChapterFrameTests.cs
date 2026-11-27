@@ -29,9 +29,10 @@ public sealed class ChapterFrameTests
         graph.Rebuild();
 
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
+        var layer = graph.FindControl<Canvas>("FrameLabelLayer")!;   // 이름표는 판이 아니라 판 위의 화면 겹에 선다(design/board-zoom.md 4절)
 
         // 이름표 — 챕터 이름이 판 위에 보인다.
-        List<string> labels = canvas.Children.OfType<Border>()
+        List<string> labels = layer.Children.OfType<Border>()
             .Select(border => (border.Child as TextBlock)?.Text)
             .Where(text => text is not null && text.StartsWith("챕터 ", StringComparison.Ordinal))
             .Select(text => text!)
@@ -64,7 +65,8 @@ public sealed class ChapterFrameTests
         graph.Rebuild();
 
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
-        Border label = canvas.Children.OfType<Border>().First(border =>
+        var layer = graph.FindControl<Canvas>("FrameLabelLayer")!;   // 이름표는 판 위의 화면 겹에 선다
+        Border label = layer.Children.OfType<Border>().First(border =>
             (border.Child as TextBlock)?.Text?.StartsWith("챕터 ch01") == true);
 
         Avalonia.Input.PointerPressedEventArgs Press(int clickCount) => new(
@@ -91,7 +93,7 @@ public sealed class ChapterFrameTests
         // 펼침 기계의 역방향 — 표가 다시 카드가 된다.
         session.SetFileExpanded(ch01, expanded: true);
         graph.Rebuild();
-        Assert.Contains(canvas.Children.OfType<Border>(),
+        Assert.Contains(layer.Children.OfType<Border>(),
             border => (border.Child as TextBlock)?.Text?.StartsWith("챕터 ch01") == true);
     });
 

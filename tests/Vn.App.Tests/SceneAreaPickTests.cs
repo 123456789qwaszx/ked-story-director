@@ -60,10 +60,8 @@ public sealed class SceneAreaPickTests : IDisposable
         session.Select(CardId(session, "root"));
         Dispatcher.UIThread.RunJobs();
 
-        // 장면 밖 · 챕터 테두리 안(챕터 이름표 왼쪽의 여백) — 그 챕터를 고른다. 「조건 및 스탯」 탭이 열려 그 챕터를 보인다(이름 칸 · 스탯 · 조건).
-        Border chapterLabel = Canvas(graph).Children.OfType<Border>()
-            .Single(border => border.Child is TextBlock { Text: "챕터 ch01 ⌄" });
-        Click(graph, new Point(Avalonia.Controls.Canvas.GetLeft(chapterLabel) - 6, Avalonia.Controls.Canvas.GetTop(chapterLabel) + 2));
+        // 장면 밖 · 챕터 테두리 안(왼위 구석의 여백) — 그 챕터를 고른다. 「조건 및 스탯」 탭이 열려 그 챕터를 보인다(이름 칸 · 스탯 · 조건).
+        Click(graph, InsideChapter(graph, "ch01"));
 
         Assert.Null(session.SelectedNodeId);
         Assert.Equal("ch01", Title(graph));
@@ -229,10 +227,8 @@ public sealed class SceneAreaPickTests : IDisposable
         string SceneOf(DialogueNode card) =>
             Ch01().Episodes.Single(episode => episode.EpisodeId == EpisodeNaming.EpisodeIdOf(card)).SceneId!;
 
-        // 챕터 안 · 장면 밖(챕터 이름표 왼쪽의 여백) — 새 장면과 첫 에피소드가 누른 자리에.
-        Border chapterLabel = Canvas(graph).Children.OfType<Border>()
-            .Single(border => border.Child is TextBlock { Text: "챕터 ch01 ⌄" });
-        var inChapter = new Point(Avalonia.Controls.Canvas.GetLeft(chapterLabel) - 6, Avalonia.Controls.Canvas.GetTop(chapterLabel) + 2);
+        // 챕터 안 · 장면 밖(왼위 구석의 여백) — 새 장면과 첫 에피소드가 누른 자리에.
+        Point inChapter = InsideChapter(graph, "ch01");
         int scenes = Ch01().Episodes.Select(episode => episode.SceneId).Distinct().Count();
         long before = session.Editor.Revision;
         RightClick(graph, inChapter);
@@ -242,7 +238,7 @@ public sealed class SceneAreaPickTests : IDisposable
         Assert.Equal(scenes + 1, Ch01().Episodes.Select(episode => episode.SceneId).Distinct().Count());
         Assert.Equal(NewNames.Scene, ChapterSceneNotes.NameOf(Ch01().SceneNotes, SceneOf(sceneCard)));
         Assert.Equal(before + 1, session.Editor.Revision);   // 장면 · 카드 · 이름이 한 칸
-        Assert.True(Math.Abs(sceneCard.Layout.Y - (inChapter.Y - 20)) < 1 || sceneCard.Layout.Y == 0);
+        Assert.True(Math.Abs(sceneCard.Layout.Y - Math.Max(inChapter.Y - 20, graph.BoardTopFloor)) < 1, $"{sceneCard.Layout.Y}");   // 판 맨 위 근처면 챕터 이름표가 판 안에 서는 끝까지
 
         // 장면 안 — 그 장면에, 누른 자리에.
         Point inHall = InsideScene(graph, "hall");
@@ -305,14 +301,9 @@ public sealed class SceneAreaPickTests : IDisposable
         int episodes = session.Editor.FindChapter("ch01")!.Episodes.Count;
 
         // 장면 hall 테두리의 아래 가장자리 바로 안은 장면 안, 그 아래는 장면 밖 · 챕터 안이다(챕터 테두리가 장면 테두리보다 40 더 나와 있다).
-        Border hallLabel = Canvas(graph).Children.OfType<Border>()
-            .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + "hall");
-        Border hallFrame = Canvas(graph).Children.OfType<Border>().Single(border =>
-            border.Child is null && !border.IsHitTestVisible && border.CornerRadius.TopLeft == 8 &&
-            Avalonia.Controls.Canvas.GetLeft(border) == Avalonia.Controls.Canvas.GetLeft(hallLabel) - 10 &&
-            Avalonia.Controls.Canvas.GetTop(border) == Avalonia.Controls.Canvas.GetTop(hallLabel) - 6);
-        double hallBottom = Avalonia.Controls.Canvas.GetTop(hallFrame) + hallFrame.Height;
-        double hallLeft = Avalonia.Controls.Canvas.GetLeft(hallFrame);
+        Rect hallFrame = graph.SceneAreaOf("hall")!.Value;
+        double hallBottom = hallFrame.Bottom;
+        double hallLeft = hallFrame.X;
         var inHall = new Point(hallLeft + 30, hallBottom - 4);
         var inChapter = new Point(hallLeft + 30, hallBottom + 24);
         Rect card = Bounds(graph, CardId(session, "b"));
@@ -401,12 +392,18 @@ public sealed class SceneAreaPickTests : IDisposable
         return new Rect(Avalonia.Controls.Canvas.GetLeft(card), Avalonia.Controls.Canvas.GetTop(card), card.Bounds.Width, card.Bounds.Height);
     }
 
-    /// <summary>그 장면 테두리 안의 빈 곳 — 이름표 왼쪽의 여백(테두리는 이름표보다 왼쪽으로 10, 위로 6 나와 있다).</summary>
+    /// <summary>그 장면 테두리 안의 빈 곳 — 왼위 구석(이름표는 그보다 오른쪽에 서고, 카드는 위 여백 26 아래에 선다).</summary>
     private static Point InsideScene(GraphEditorView graph, string sceneId)
     {
-        Border label = Canvas(graph).Children.OfType<Border>()
-            .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + sceneId);
-        return new Point(Avalonia.Controls.Canvas.GetLeft(label) - 5, Avalonia.Controls.Canvas.GetTop(label) + 2);
+        Rect area = graph.SceneAreaOf(sceneId)!.Value;
+        return new Point(area.X + 5, area.Y + 8);
+    }
+
+    /// <summary>그 챕터 테두리 안 · 장면 밖의 빈 곳 — 왼위 구석(장면 테두리는 그보다 옆 40 · 위 46 안쪽에 선다).</summary>
+    private static Point InsideChapter(GraphEditorView graph, string chapterId)
+    {
+        Rect area = graph.ChapterAreaOf(chapterId)!.Value;
+        return new Point(area.X + 6, area.Y + 12);
     }
 
     private static string? Title(GraphEditorView graph) => graph.InspectorHeaderText;

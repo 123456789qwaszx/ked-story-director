@@ -61,21 +61,23 @@ public sealed class ChoiceSlotTests : IDisposable
     });
 
     [Fact]
-    public void 빈_칸은_회색_빈_선택지가_든_네모_칸이고_누르면_그_자리에서_문구_칸이_열린다() => HeadlessUi.Run(() =>
+    public void 빈_칸은_점_옆의_더하기_단추이고_누르면_문구_칸이_열려_곧바로_적을_수_있다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-18 소유자 — 「비어있는 선택지점 옆쪽에 입력할 수 있는 네모난 박스를 두고 그 안에 "빈 선택지"라는 글자를 회색으로」.
+        // 2026-11-26 소유자 — 「바로 텍스트 박스를 노출 시키는 것보다는 개별 선택지 옆에 +버튼을 두는 방식」 · 「빈선택지를 누르더라도 바로 텍스트 박스가
+        // 활성화 되는게 아니라 그 상태에서 다시 한 번 눌러야지 선택지를 입력할 수 있게 되는데 이 버그도」. 세 칸은 그대로 늘 선다 — 칸마다 제 [+]다.
         (GraphEditorView graph, AuthoringSession session) = Show();
         IReadOnlyList<Control> faces = Labels(graph, "root");
 
-        Assert.Equal(["자동", GraphEditorView.SlotPlaceholderText, GraphEditorView.SlotPlaceholderText], faces.Select(TextOf));
-        Border box = Assert.IsType<Border>(faces[1]);
-        Assert.True(box.BorderThickness.Left > 0);   // 네모 칸
-        TextBlock text = Assert.IsType<TextBlock>(box.Child);
-        Assert.NotNull(text.Foreground);             // ⛔ 「＋ 선택지」는 붓이 없어 보이지 않았다
+        Assert.Equal(["자동", "+", "+"], faces.Select(TextOf));
+        Border plus = Assert.IsType<Border>(faces[1]);
+        Assert.True(plus.BorderThickness.Left > 0);      // 단추 모양의 네모
+        Assert.Equal(plus.Width, plus.Height);           // 작은 정사각 — 적는 칸 모양이 아니다
+        TextBlock text = Assert.IsType<TextBlock>(plus.Child);
+        Assert.NotNull(text.Foreground);                 // ⛔ 「＋ 선택지」는 붓이 없어 보이지 않았다
 
-        Press(box);
+        Press(plus);
         Assert.NotNull(graph.SlotLabelBox);
-        Assert.Equal(box.Width, graph.SlotLabelBox!.Width);   // 같은 폭 — 누르면 그 자리에서 열린다
+        Assert.True(graph.SlotLabelBox!.IsFocused);      // 한 번 누르면 곧바로 적는다 — 한 번 더 누를 일이 없다
     });
 
     [Fact]
@@ -145,14 +147,15 @@ public sealed class ChoiceSlotTests : IDisposable
     });
 
     [Fact]
-    public void 이어진_칸은_초록이다() => HeadlessUi.Run(() =>
+    public void 이어진_칸의_점은_그_칸의_길_색이다() => HeadlessUi.Run(() =>
     {
+        // 2026-11-26 — 디자인 점검 2번: 점 · 문구 · 선이 한 색이다(⛔ 그 전에는 이은 점이 초록이었다).
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "왼쪽으로");
         graph.Rebuild();
 
-        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[0]);
+        Assert.Equal(GraphEditorView.LaneBrush(0), Dots(graph, "root")[0]);
     });
 
     [Fact]
@@ -281,7 +284,7 @@ public sealed class ChoiceSlotTests : IDisposable
 
         // 이은 칸은 제 줄(둘째)에 빨갛게 선다. 첫 칸은 더는 자동 자리가 아니다(이은 길이 있다).
         Border needs = Assert.Single(Rows(graph, "root")[1].Children.OfType<Border>(), face => face.Tag as string == GraphEditorView.SlotNeedsLabelTag);
-        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
+        Assert.Equal(GraphEditorView.LaneBrush(1), Dots(graph, "root")[1]);
         Assert.Equal(GraphEditorView.SlotAsleep, Dots(graph, "root")[0]);
 
         // 적을 때까지 게임에는 임시 문구로 나간다 — 칸의 풍선이 그 문구를 그대로 보인다(2026-11-26 · MissingChoiceText).
@@ -386,7 +389,7 @@ public sealed class ChoiceSlotTests : IDisposable
 
         Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, "root").Take(2).Select(TextOf));
         Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[0]);
-        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
+        Assert.Equal(GraphEditorView.LaneBrush(1), Dots(graph, "root")[1]);   // 이은 점은 그 칸의 길 색(디자인 점검 2번)
 
         // 첫째 칸을 나중에 이어도 그 자리다 — 간선은 그 줄 자리에 끼워 들어가, 런타임 선택지 순서도 화면과 같다.
         Drag(graph, session, "root", slot: 0, onto: "a");
@@ -410,7 +413,7 @@ public sealed class ChoiceSlotTests : IDisposable
 
         Assert.Equal(["하나", "둘"], Labels(graph, "root").Take(2).Select(TextOf));
         Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[0]);
-        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
+        Assert.Equal(GraphEditorView.LaneBrush(1), Dots(graph, "root")[1]);   // 이은 점은 그 칸의 길 색(디자인 점검 2번)
 
         // 다시 이으면 도로 첫째다 — 간선도 「둘」 앞에 선다.
         Drag(graph, session, "root", slot: 0, onto: "a");

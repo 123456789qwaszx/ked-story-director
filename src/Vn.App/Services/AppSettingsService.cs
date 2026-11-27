@@ -229,6 +229,19 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>
+    /// 툴의 테마 (설정 창 「기타」의 테마 칸 — themes · <see cref="Theming.ThemeCatalog"/>) — 테마의 이름(「clear-sky」 · 「classic」), null이면
+    /// 처음 테마(<see cref="Theming.ThemeCatalog.Default"/>). 다시 켤 때 반영한다.
+    /// </summary>
+    public static string? LoadTheme() => Theming.ThemeCatalog.Normalize(Load(SettingsPath).Theme);
+
+    public static void SaveTheme(string? theme)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.Theme = Theming.ThemeCatalog.Normalize(theme);
+        Save(settings);
+    }
+
     /// <summary>설명을 간소화하는가 (설정 창 「기타」 — brief-guides G1). 처음에는 다 보인다.</summary>
     public static bool LoadBriefGuides() => Load(SettingsPath).BriefGuides;
 
@@ -478,6 +491,9 @@ internal static class AppSettingsService
 
         /// <summary>툴 화면의 언어 — <see cref="LoadLanguage"/>. null이면 PC 언어를 따른다.</summary>
         public string? Language { get; set; }
+
+        /// <summary>툴의 테마 — <see cref="LoadTheme"/>. null이면 처음 테마.</summary>
+        public string? Theme { get; set; }
     }
 
     /// <summary>

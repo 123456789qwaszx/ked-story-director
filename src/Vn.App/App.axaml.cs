@@ -8,6 +8,7 @@ using Avalonia.Platform;
 using Avalonia.Styling;
 using Vn.App.Services;
 using Vn.App.Strings;
+using Vn.App.Theming;
 
 namespace Vn.App;
 
@@ -16,6 +17,9 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+
+        // 테마 — 창을 짓기 전에 한 번(앱 설정 · 없으면 처음 테마 · themes). 켜 있는 동안은 바꾸지 않는다(화면 언어와 같다).
+        ThemeService.ApplyAtStartup(this);
 
         // 맥의 메뉴 막대 첫 칸(앱 메뉴)에 서는 이름이다 — 다른 OS에서는 보이지 않는다. 앱 메뉴를 빈 것으로 주어, Avalonia가 대신 채우는
         // 「About Avalonia」를 걷는다(가리기 · 종료 같은 맥의 기본 줄은 맥이 그대로 세운다). File 메뉴는 창 안에 그대로다(writer-app WA4).

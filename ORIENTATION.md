@@ -100,6 +100,7 @@
 | 챕터 값의 검사 하나 더하기 | `Chapters/ChapterStructureCheck.cs`(값의 흠) · `ChapterValidator.cs`(판과 맞대는 검사) |
 | 진행 JSON의 모양 | `Chapters/ChapterProgressionExporter.cs` — 런타임 계약 [`docs/runtime-contract.md`](docs/runtime-contract.md) |
 | [구성] 화면 | `Vn.App/Views/ChapterGraphView.axaml{,.cs}` |
+| 화면의 색 · 모양 · 테마 | `Vn.App/Theming/Skin.cs`(이름) · `Vn.App/Themes/{테마}/`(값 · 컨트롤 모양) — 색을 코드에 숫자로 적지 않는다. 새 테마 더하는 법은 [`docs/themes.md`](docs/themes.md) |
 | 화면 문구 | `Vn.App/Strings/Ui.resx` · `Ui.en.resx`(고치는 법은 [`docs/ui-text.md`](docs/ui-text.md)) |
 | [대본] 화면 | `Vn.App/Views/GraphEditorView.axaml.cs`(+ `.Writer` 서식 · `.Find` 찾기 · `.ChoiceDrop` 선택지 잇기) · 대사 편집기 `DialogueNodeEditor.axaml.cs` |
 | 도구 모음 · 창 | `Vn.App/MainWindow.axaml{,.cs}` · 맡은 일별 partial `MainWindow.*.cs`(하이어아키 · 화자 · 조건 · 장면 메모 · 선 인스펙터) |

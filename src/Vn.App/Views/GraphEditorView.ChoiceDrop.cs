@@ -3,6 +3,7 @@ using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Text;
@@ -49,9 +50,9 @@ public partial class GraphEditorView
     /// <summary>판정 — 꼬리표(짧은 말), 아래 띠(까닭까지), 놓을 카드.</summary>
     internal sealed record ChoiceDrop(ChoiceDropKind Kind, string Badge, string Hint, string? TargetNodeId);
 
-    internal static readonly IBrush DropJoinBrush = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB));
-    internal static readonly IBrush DropCutBrush = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
-    internal static readonly IBrush DropIdleBrush = new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80));
+    internal static IBrush DropJoinBrush => Skin.Join.Brush();
+    internal static IBrush DropCutBrush => Skin.Danger.Brush();
+    internal static IBrush DropIdleBrush => Skin.Neutral.Brush();
 
     /// <summary>포인터 옆 꼬리표 — 끄는 동안과 점에 포인터를 올렸을 때. 판(<c>GraphCanvas</c>) 위에 서되 배율을 거슬러 늘 같은 크기다.</summary>
     private Border? _dropBadge;
@@ -352,8 +353,17 @@ public partial class GraphEditorView
 
         UnhoverKnob();
         _hoveredKnob = knob;
-        knob.RenderTransformOrigin = RelativePoint.Center;
-        knob.RenderTransform = new ScaleTransform(1.5, 1.5);
+
+        // 점이 커진다 — 줄인 판에서 키운 점(Marked)이면 그 배수의 1.5배다(CardStages).
+        if (double.IsNaN(knob.GetValue(MarkSizeProperty)))
+        {
+            knob.RenderTransformOrigin = RelativePoint.Center;
+            knob.RenderTransform = new ScaleTransform(1.5, 1.5);
+        }
+        else
+        {
+            ApplyMark(knob);
+        }
 
         // 회색 점도 끌 수 있다 — 문구 없이 먼저 잇고 나중에 적는다(2026-11-26). ⛔ 그 전에는 「문구를 적으면 끌어서 이을 수 있습니다」(회색 꼬리표)였다.
         string text = !live
@@ -389,8 +399,17 @@ public partial class GraphEditorView
             return;
         }
 
-        _hoveredKnob.RenderTransform = null;
+        Control knob = _hoveredKnob;
         _hoveredKnob = null;
+
+        if (double.IsNaN(knob.GetValue(MarkSizeProperty)))
+        {
+            knob.RenderTransform = null;
+        }
+        else
+        {
+            ApplyMark(knob);   // 줄인 판의 키움으로 돌아간다
+        }
     }
 
     // ── 꼬리표 · 테두리 ──────────────────────────────────────────────────────
@@ -403,7 +422,7 @@ public partial class GraphEditorView
             {
                 FontSize = 11,
                 FontWeight = FontWeight.SemiBold,
-                Foreground = Brushes.White
+                Foreground = Skin.OnAccent.Brush()
             };
 
             _dropBadge = new Border
@@ -469,15 +488,17 @@ public partial class GraphEditorView
 
         if (_dropFrame is null)
         {
-            _dropFrame = new Rectangle
-            {
-                StrokeThickness = 3,
-                RadiusX = 8,
-                RadiusY = 8,
-                Fill = Brushes.Transparent,
-                IsHitTestVisible = false,
-                ZIndex = 1999
-            };
+            _dropFrame = Floored(
+                new Rectangle
+                {
+                    StrokeThickness = 3,
+                    RadiusX = 8,
+                    RadiusY = 8,
+                    Fill = Brushes.Transparent,
+                    IsHitTestVisible = false,
+                    ZIndex = 1999
+                },
+                PickedLineFloorPx);   // 줄인 판에서도 놓을 카드의 테두리가 보인다(LineFloor)
 
             GraphCanvas.Children.Add(_dropFrame);
         }

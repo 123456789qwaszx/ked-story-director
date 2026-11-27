@@ -11,6 +11,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using System.Text.RegularExpressions;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
@@ -65,6 +66,18 @@ public partial class GraphEditorView : UserControl
     /// <summary>켜진 글 맞춤 단추 · 기본 크기로 고정한 카드의 기본 크기 고정 단추가 지는 class — 화면 시험의 손잡이다.</summary>
     internal const string FitOnClass = "fit-on";
 
+    /// <summary>판의 카드(겉 테두리)의 클래스 — 테마의 손잡이다.</summary>
+    internal const string BoardCardClass = "board-card";
+
+    /// <summary>고른 카드(범위로 고른 무리도)의 클래스 — 테마의 손잡이다.</summary>
+    internal const string PickedCardClass = "picked";
+
+    /// <summary>카드 머리 오른쪽 끝의 고정 · 맞춤 단추 묶음의 클래스 — 테마의 손잡이다.</summary>
+    internal const string CardTogglesClass = "card-toggles";
+
+    /// <summary>선택지 칸(점 + 문구 한 줄 · <see cref="SlotChip"/>)의 클래스 — 판을 줄이면 그 카드의 단계로 칠한다(<see cref="ApplySlotStage"/>).</summary>
+    internal const string SlotChipClass = "slot-chip";
+
     /// <summary>글에 맞출 때 더하는 몫 — 커서 · 반올림에 줄이 꺾이지 않게.</summary>
     private const double FitSlack = 4;
 
@@ -76,7 +89,7 @@ public partial class GraphEditorView : UserControl
     private const double HeaderHeight = TitleHeight + HeaderGap;
     private const double CardPadding = 8;
     private const double CardBorder = 1;
-    private const double PortRadius = 6;
+    internal const double PortRadius = 6;
 
     /// <summary>카드 왼쪽 등뼈 막대(3) + 그 오른쪽 틈(7) — 몸통 칸은 그만큼 안에서 시작한다.</summary>
     private const double SpineInset = 10;
@@ -108,21 +121,76 @@ public partial class GraphEditorView : UserControl
     /// <summary>장면 이름표의 Tag 머리 — 뒤에 장면ID가 붙는다. 누르면 그 장면을 접는다.</summary>
     internal const string SceneLabelTag = "scene-label:";
 
-    /// <summary>장면 색 — 장면 프레임 · 이름표 · 접은 장면 상자가 함께 쓴다.</summary>
-    private static readonly Color SceneColor = Color.FromRgb(217, 119, 6);
+    /// <summary>판의 장면 이름표 우클릭 — 「자동」과 다섯 색. 고르면 넣고(되돌리기 한 칸) 판이 다시 선다.</summary>
+    private void OpenSceneColorMenu(Control anchor, string chapterId, string sceneId, string name, int color, int? chosen)
+    {
+        var menu = new ContextMenu
+        {
+            ItemsSource = SceneColorMenu.Items(
+                color,
+                chosen,
+                picked => UiGuard.Run(_session, Ui.SceneColor_Menu, () =>
+                {
+                    if (_session is { } session)
+                    {
+                        SceneColorMenu.Apply(session, [(chapterId, sceneId, name)], picked);
+                    }
+                }),
+                // 「직접 고르기 (RGB)…」 — 색 차림을 이름표 자리에 연다(2026-11-27). 직접 고르기는 그 장면의 지금 색에서 시작한다.
+                () =>
+                {
+                    if (_session is { } session)
+                    {
+                        SceneColorMenu.ShowChooser(
+                            anchor,
+                            session,
+                            () => SceneColorMenu.ColorNow(session, chapterId, sceneId),
+                            picked => UiGuard.Run(session, Ui.SceneColor_Menu, () => SceneColorMenu.Apply(session, [(chapterId, sceneId, name)], picked)));
+                    }
+                })
+        };
+
+        SceneColorMenuShown = menu;
+        menu.Open(anchor);
+    }
+
+    /// <summary>마지막으로 연 장면 이름표의 색 메뉴 — 화면 시험이 찾는다.</summary>
+    internal ContextMenu? SceneColorMenuShown { get; private set; }
+
+    /// <summary>장면 이름표 앞 장면 색 점의 Tag — 시험이 찾는다.</summary>
+    internal const string SceneDotTag = "scene-dot";
+
+    /// <summary>
+    /// 그 판 · 장면의 색 칸(1 ~ 5) — 고른 칸이 먼저, 그 밖은 자동(<see cref="SceneColors"/>). 접은 장면 상자가 쓴다 — 펼친 장면의 테두리는 챕터마다 한 번
+    /// 셈한다(<see cref="DrawSceneFrames"/>). 판이 챕터 판이 아니면 1.
+    /// </summary>
+    private int SceneColorOf(string fileId, string sceneId)
+    {
+        if (_session?.Project.Files.FirstOrDefault(file => string.Equals(file.Id, fileId, StringComparison.Ordinal)) is not { } board)
+        {
+            return 1;
+        }
+
+        ChapterDocument chapter = EpisodeNaming.ChapterOfBoard(_session.Project, board);
+        return SceneColors.ColorOf(
+            SceneColors.Of(ChapterSceneGrouping.Of(chapter.ToGraphModel(chapter.ChapterId)), chapter.SceneNotes),
+            sceneId);
+    }
+
 
     private readonly List<NodeCard> _cards = new();
     private readonly List<FileProxyVisual> _proxies = new();
     private readonly List<EdgeVisual> _edges = new();
 
-    /// <summary>챕터(판) 박스 — 펼친 판의 노드들을 감싸는 배경 프레임 + 이름표 (2단계 무대 3번).</summary>
+    /// <summary>챕터(판) · 장면 박스 — 펼친 판의 노드들을 감싸는 배경 프레임 (2단계 무대 3번). 이름표는 화면 겹에 따로 선다(<see cref="_frameLabels"/>).</summary>
     private readonly List<Control> _frames = new();
 
     /// <summary>
     /// 판에 그린 장면 테두리의 자리 — 빈 곳을 눌렀을 때 그 자리가 어느 장면 안인지 찾는다(<see cref="SceneAt"/>). 테두리는 손을
-    /// 받지 않으므로(카드 · 선 · 범위 선택이 먼저다) 자리로 찾는다. 테두리를 그릴 때마다 다시 채운다.
+    /// 받지 않으므로(카드 · 선 · 범위 선택이 먼저다) 자리로 찾는다. 테두리를 그릴 때마다 다시 채운다. 미니맵도 이것으로 장면 자리를 그 장면 색(<c>Color</c> —
+    /// 팔레트 칸)으로 깐다(<see cref="RefreshMinimap"/>).
     /// </summary>
-    private readonly List<(Rect Area, string FileId, string ChapterId, string SceneId)> _sceneAreas = new();
+    private readonly List<(Rect Area, string FileId, string ChapterId, string SceneId, int Color)> _sceneAreas = new();
 
     /// <summary>판에 그린 챕터 테두리의 자리(챕터인 판만) — 장면 밖 · 챕터 안의 빈 곳을 찾는다.</summary>
     private readonly List<(Rect Area, string ChapterId)> _chapterAreas = new();
@@ -256,6 +324,9 @@ public partial class GraphEditorView : UserControl
     private NodeCard? _draggingCard;
     private Point _dragOffset;
 
+    /// <summary>끄는 카드 하나가 끌기를 시작한 자리 — 옮김을 판 안으로 막는 기준(<see cref="ClampDragMove"/>).</summary>
+    private Point _dragStart;
+
     // 크기 끌기 — 끄는 동안 화면의 카드만 키우고 놓을 때 한 번 적는다(CommitResize).
     private NodeCard? _resizingCard;
     private ResizeEdges _resizeEdges;
@@ -297,6 +368,7 @@ public partial class GraphEditorView : UserControl
     private const double MinimapHeight = 120;
 
     private double _zoom = 1;
+
     private bool _panning;
     private Point _panStart;
     private Vector _panStartOffset;
@@ -332,6 +404,26 @@ public partial class GraphEditorView : UserControl
     private Point _rubberStart;
     private readonly HashSet<string> _multiSelected = new(StringComparer.Ordinal);
     private bool _draggingGroup;
+
+    /// <summary>
+    /// 무리(<see cref="_multiSelected"/>) 안의 카드를 눌러 무리 끌기를 시작했다 — 그 카드. 움직이지 않고 놓으면 무리를 풀고 이 카드 하나만 고른다(<see cref="CommitDrag"/>).
+    /// 이름표를 눌러 시작한 무리 끌기는 null이다(그때는 무리가 남는다).
+    /// </summary>
+    private string? _groupPressedNodeId;
+
+    /// <summary>
+    /// 방금 누른 것이 그 카드 머리의 빈 곳이었다(한 번째 누름) — 두 번 누름은 <b>같은 카드의 머리 빈 곳을 잇달아</b> 눌렀을 때만이다(<see cref="OnCardPressed"/>).
+    /// 다른 데를 누르면 비워진다. <c>At</c>은 누른 때(ms)다.
+    /// </summary>
+    private (string NodeId, ulong At)? _headerBlankPress;
+
+    /// <summary>
+    /// 머리 빈 곳의 두 번째 누름 — 끌지 않고 놓으면 그때 기본 크기로 고정하고 풀기를 오간다(<see cref="CommitDrag"/>). <c>From</c>은 누를 때 카드 자리다.
+    /// </summary>
+    private (string NodeId, Point From)? _pendingBasePin;
+
+    /// <summary>두 번 누름의 두 누름 사이로 셈하는 가장 긴 틈(ms) — 운영체제의 두 번 누름 틈(윈도우는 길어야 5초)이 먼저 거른다. 오래된 첫 누름을 걸러 내는 울타리다.</summary>
+    private const ulong DoublePressWindow = 5000;
     private Point _groupDragStart;
     private readonly Dictionary<string, Point> _groupStartPositions = new(StringComparer.Ordinal);
 
@@ -548,6 +640,8 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     internal void EndGestures()
     {
+        _pendingBasePin = null;   // 창을 떠났다 — 놓음을 보지 못했으니 기본 크기 고정은 오가지 않는다
+
         if (_rubberBand is not null)
         {
             GraphCanvas.Children.Remove(_rubberBand);
@@ -683,6 +777,7 @@ public partial class GraphEditorView : UserControl
         GraphCanvas.PointerMoved += OnCanvasPointerMoved;
         GraphCanvas.PointerReleased += OnCanvasPointerReleased;
         GraphCanvas.PointerPressed += OnCanvasPointerPressed;
+        GraphCanvas.Children.CollectionChanged += OnCanvasChildrenChanged;   // 판에 붙는 선은 화면 바닥을 건다(design/board-zoom.md 5절)
 
         // 그래프 내비게이션 (W40) — 휠 줌·중간 버튼 팬은 스크롤보다 먼저 가로챈다.
         GraphScroll.AddHandler(PointerWheelChangedEvent, OnGraphWheel, RoutingStrategies.Tunnel);
@@ -692,6 +787,13 @@ public partial class GraphEditorView : UserControl
         GraphScroll.AddHandler(PointerMovedEvent, OnGraphPanMoved, RoutingStrategies.Tunnel);
         GraphScroll.AddHandler(PointerReleasedEvent, OnGraphPanReleased, RoutingStrategies.Tunnel);
         GraphScroll.ScrollChanged += (_, _) => RefreshMinimapViewport();
+        GraphScroll.ScrollChanged += (_, _) => BoardBackdrop.Track(GraphScroll.Offset, _zoom);   // 깔개의 점이 판을 따라온다(themes)
+        GraphScroll.ScrollChanged += (_, _) => PlaceFrameLabels();   // 이름표의 화면 겹도 판을 따라온다(design/board-zoom.md 4절)
+
+        // 이름표의 화면 겹은 판(스크롤) 밖이다 — 이름표 위에서도 휠 · 집기 · 가운데 단추의 판 옮기기가 판의 것이다.
+        FrameLabelLayer.AddHandler(PointerWheelChangedEvent, OnGraphWheel, RoutingStrategies.Tunnel);
+        FrameLabelLayer.AddHandler(PointerTouchPadGestureMagnifyEvent, OnGraphMagnify, RoutingStrategies.Bubble);
+        FrameLabelLayer.AddHandler(PointerPressedEvent, OnGraphPanPressed, RoutingStrategies.Tunnel);
 
         // 맞추기로 한 판이 남아 있는데 화면 크기가 이제 섰다(탭이 처음 보였다) — 그때 맞춘다.
         GraphScroll.PropertyChanged += (_, args) =>
@@ -811,7 +913,7 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>미니맵을 감췄을 때 홀로 남는 배율 글자의 색 — 연한 회색(판은 늘 밝다).</summary>
-    private static readonly IBrush HiddenMinimapZoomBrush = new SolidColorBrush(Color.FromRgb(0xA0, 0xA0, 0xA0));
+    private static IBrush HiddenMinimapZoomBrush => Skin.MinimapZoomHidden.Brush();
 
     /// <summary>미니맵을 보일 때의 모양(axaml이 정한 것) — 감췄다 다시 보일 때 되돌린다. 처음 <see cref="ApplyShowMinimap"/>이 잰다.</summary>
     private (IBrush? Background, Thickness Border, Thickness Padding, Thickness Margin, double Opacity)? _minimapLook;
@@ -992,6 +1094,7 @@ public partial class GraphEditorView : UserControl
         _proxies.Clear();
         _edges.Clear();
         _frames.Clear();
+        ClearFrameLabels();
         _sceneAreas.Clear();
         _chapterAreas.Clear();
         bool hadLine = _selectedEdge is not null || _selectedRail is not null;
@@ -1066,6 +1169,7 @@ public partial class GraphEditorView : UserControl
         }
 
         _frames.Clear();
+        ClearFrameLabels();
         _sceneAreas.Clear();
         _chapterAreas.Clear();
 
@@ -1117,32 +1221,17 @@ public partial class GraphEditorView : UserControl
             {
                 Width = area.Width,
                 Height = area.Height,
-                CornerRadius = new CornerRadius(12),
-                BorderThickness = new Thickness(isActive ? 1.6 : 1),
-                BorderBrush = new SolidColorBrush(
-                    isActive ? Color.FromArgb(150, 61, 123, 217) : Color.FromArgb(70, 128, 128, 128)),
-                Background = new SolidColorBrush(
-                    isActive ? Color.FromArgb(12, 61, 123, 217) : Color.FromArgb(8, 128, 128, 128)),
+                CornerRadius = new CornerRadius(Skin.ChapterFrameRadius),
+                BorderThickness = new Thickness((isActive ? 1.6 : 1) * Skin.FrameWeight),
+                BorderBrush = (isActive ? Skin.ChapterFrameBorder : Skin.ChapterFrameBorderIdle).Brush(),
+                Background = (isActive ? Skin.ChapterFrameFill : Skin.ChapterFrameFillIdle).Brush(),
+                BoxShadow = Skin.ChapterFrameShadow,   // 챕터의 면이 판의 바탕에서 떠 보인다(테마가 정한다 · 기본 테마는 없다)
                 IsHitTestVisible = false
             };
             Canvas.SetLeft(frame, area.X);
             Canvas.SetTop(frame, area.Y);
 
-            var label = new Border
-            {
-                CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(8, 3),
-                Background = new SolidColorBrush(
-                    isActive ? Color.FromArgb(220, 61, 123, 217) : Color.FromArgb(160, 107, 114, 128)),
-                Cursor = new Cursor(StandardCursorType.Hand),
-                Child = new TextBlock
-                {
-                    Text = string.Format(Ui.Board_Chapter, chapterName),
-                    FontSize = 11,
-                    FontWeight = FontWeight.SemiBold,
-                    Foreground = Brushes.White
-                }
-            };
+            Border label = ChapterLabel(boardName, chapterName, isActive, folded: false);
             ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard);
 
             // 이름표만 히트 대상이다(프레임은 아님) — 한 번 = 이 챕터의 카드를 모두 골라 함께 끈다, 두 번 = 접기(2026-11-18 소유자 · ⛔ 그 전에는 한 번에
@@ -1158,15 +1247,24 @@ public partial class GraphEditorView : UserControl
                 new HierarchyPick(HierarchyKind.Chapter, boardName),
                 () => _session?.SetFileExpanded(frameFileId, expanded: false));
 
-            Canvas.SetLeft(label, area.X + 12);
-            Canvas.SetTop(label, area.Y + 10);
-
+            // 이름표는 판 위의 화면 겹에 선다 — 테두리 바깥 위에 얹고, 자리 · 크기는 배율 · 스크롤을 따라 PlaceFrameLabels가 정한다(design/board-zoom.md 4절 ·
+            // 2026-11-26 소유자 — 「챕터는 경계 줄 대신, 경계 바깥 아웃라인 위쪽에 얹고」). ⛔ 그 전에는 판에 서서 자리를 테마가 정했다(기본은 테두리 안쪽 왼위,
+            // 「맑은 하늘」은 위쪽 선 위에 걸터앉음 — ChapterLabelTop).
             _frames.Add(frame);
-            _frames.Add(label);
+            AddFrameLabel(new FrameLabel(label, chapter: true, area, 12 + (8 * Skin.FrameLabelGrow)));
 
             // 챕터 안에 장면을 한 겹 더 (R6 S-3b) — 챕터 프레임 <b>뒤에</b> 더해야 그 위에
             // 깔린다(아래 Insert가 목록 순서대로 넣는다).
-            DrawSceneFrames(group.Key, group.OfType<ExpandedNodeProjection>());
+            DrawSceneFrames(group.Key, group.OfType<ExpandedNodeProjection>(), area);
+        }
+
+        // 접힌 판(챕터)의 표에도 펼쳤을 때와 같은 챕터 이름표 — 표의 위 바깥에 선다(<see cref="FoldedChapterLabel"/>).
+        foreach (FileProxyVisual proxy in _proxies.Where(item => item.SceneId is null))
+        {
+            if (FoldedChapterLabel(proxy) is { } folded)
+            {
+                AddFrameLabel(new FrameLabel(folded, chapter: true, ProxyRect(proxy), 12 + (8 * Skin.FrameLabelGrow)) { KeepWhole = true });
+            }
         }
 
         // 카드·간선보다 뒤에 깔리도록 맨 앞 인덱스에 순서대로 끼운다.
@@ -1183,7 +1281,30 @@ public partial class GraphEditorView : UserControl
         {
             DrawChapterRails();
         }
+
+        // 철도를 긋다가 선택지 칸의 폭이 달라졌다(처음 그었다 · 문구가 바뀌었다) — 위의 테두리는 그 전의 폭으로 그은 것이라 한 번 다시 긋는다. 다시 그을 때는
+        // 철도가 따라가기만 하므로(같은 자리 — 다시 긋지 않는다) 폭이 또 바뀌지 않는다.
+        if (_railReachChanged && !_reframing)
+        {
+            _railReachChanged = false;
+            _reframing = true;
+
+            try
+            {
+                DrawChapterFrames(followRails: true);
+            }
+            finally
+            {
+                _reframing = false;
+                _railReachChanged = false;
+            }
+        }
+
+        PlaceFrameLabels();   // 테두리 · 철도가 다 선 뒤에 — 이름표가 비켜 갈 선택지 칸의 자리까지 안다
     }
+
+    /// <summary>선택지 칸의 폭이 바뀌어 테두리를 다시 긋는 중 — 그 안에서 또 다시 긋지 않는다.</summary>
+    private bool _reframing;
 
     /// <summary>
     /// <b>장면 프레임</b> — 챕터 프레임 안에 한 겹 더 (R6 S-3b · R6-explorer §5).
@@ -1198,7 +1319,8 @@ public partial class GraphEditorView : UserControl
     /// ⚠ 히트 대상이 아니다 — 클릭·드래그·포트에 아무 영향이 없다(챕터 프레임과 같다). 테두리 안의 빈 곳을 <b>누르면</b>(끌지 않고)
     /// 그 장면을 고른다 — 자리를 <see cref="_sceneAreas"/>에 적어 두고 범위 선택이 아무것도 못 잡았을 때 찾는다(2026-11-17).
     /// </summary>
-    private void DrawSceneFrames(string fileId, IEnumerable<ExpandedNodeProjection> nodes)
+    /// <param name="chapterArea">그 챕터의 테두리(판 자리) — 장면 이름표는 이 안에 선다(<see cref="PlaceFrameLabels"/>).</param>
+    private void DrawSceneFrames(string fileId, IEnumerable<ExpandedNodeProjection> nodes, Rect chapterArea)
     {
         if (_session?.Project.Files.FirstOrDefault(file =>
                 string.Equals(file.Id, fileId, StringComparison.Ordinal)) is not { } board)
@@ -1210,6 +1332,9 @@ public partial class GraphEditorView : UserControl
 
         IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(
             chapter.ToGraphModel(chapter.ChapterId));
+
+        // 장면 색 — 고른 칸이 먼저, 그 밖은 자동(장면ID · 이야기 차례로 앞 두 장면과 다르게 · design/scene-colors.md).
+        IReadOnlyDictionary<string, int> colors = SceneColors.Of(scenes, chapter.SceneNotes);
 
         var sceneOf = new Dictionary<string, ChapterScene>(StringComparer.Ordinal);
 
@@ -1252,15 +1377,36 @@ public partial class GraphEditorView : UserControl
 
             if (bounds is not { } area)
             {
+                // 접은 장면 — 상자에도 펼쳤을 때와 같은 이름표를 단다(<see cref="SceneLabel"/> · 2026-11-27). 상자를 장면 테두리처럼 감싼 자리의 왼위라 펼쳤을 때와
+                // 같은 자리 — 접고 펴도 이름이 그 자리에 그대로 있다(상자의 자리 = 장면 카드들이 서던 자리의 왼쪽 위).
+                if (FindSceneProxy(fileId, scene.SceneId) is { } proxy)
+                {
+                    Border folded = SceneLabel(
+                        fileId, chapter.ChapterId, scene, [], ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene),
+                        SceneColors.ColorOf(colors, scene.SceneId), ChapterSceneNotes.ColorOf(chapter.SceneNotes, scene.SceneId), proxy);
+                    AddFrameLabel(new FrameLabel(folded, chapter: false, ProxyRect(proxy).Inflate(SceneFramePad), 10 + (6 * Skin.FrameLabelGrow))
+                    {
+                        Container = chapterArea
+                    });
+                }
+
                 continue;
             }
 
             // 챕터 프레임보다 얕게 — 두 테두리 사이에 챕터의 빈 곳이 남는다(<see cref="ChapterFramePad"/>).
             area = area.Inflate(SceneFramePad);
 
-            _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId));
-            _frames.Add(SceneFrame(area));
-            _frames.Add(SceneLabel(area, fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene)));
+            int color = SceneColors.ColorOf(colors, scene.SceneId);
+            _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId, color));
+            _frames.Add(SceneFrame(area, Skin.SceneTintOf(color)));
+
+            Border label = SceneLabel(
+                fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene),
+                color, ChapterSceneNotes.ColorOf(chapter.SceneNotes, scene.SceneId));
+            AddFrameLabel(new FrameLabel(label, chapter: false, area, 10 + (6 * Skin.FrameLabelGrow))
+            {
+                Container = chapterArea
+            });
         }
     }
 
@@ -1268,7 +1414,8 @@ public partial class GraphEditorView : UserControl
     private static readonly Thickness SceneFramePad = new(10, 26, 10, 10);
 
     /// <summary>
-    /// 챕터 테두리가 카드에서 나오는 폭 — 장면 테두리(<see cref="SceneFramePad"/>) 바깥으로 옆 · 아래 40, 위 46(챕터 이름표가 그 위에 앉는다)을 더
+    /// 챕터 테두리가 카드에서 나오는 폭 — 장면 테두리(<see cref="SceneFramePad"/>) 바깥으로 옆 · 아래 40, 위 46(줄인 판에서 장면 이름표가 위로 자라는 자리 ·
+    /// 챕터 이름표는 테두리 바깥 위에 선다)을 더
     /// 둔다(2026-11-25 소유자 — 「챕터 하나에 장면만 있을 때 챕터와 장면 사이의 공간이 너무 좁아 우클릭으로 장면을 추가하기 불편」 · ⛔ 그 전에는
     /// (24, 46, 24, 24)라 장면 테두리 바깥 띠가 14(위 20)뿐이었다).
     /// </summary>
@@ -1280,16 +1427,21 @@ public partial class GraphEditorView : UserControl
             ? EpisodeNaming.EpisodeIdOf(dialogue)
             : null;
 
-    private static Border SceneFrame(Rect area)
+    /// <summary>
+    /// 장면 테두리의 면 — 그 장면 색의 <b>비치는</b> 바탕(<see cref="Skin.SceneTint1"/>). 장면이 겹친 자리는 한 겹 더 진해진다(같은 색이면 진한 그 색, 다른 색이면
+    /// 섞인 색 — 2026-11-26 소유자: 「같은 색의 장면끼리 겹칠 때, 이게 아예 구분이 안 가는데 … 색을 겹치게 해서 보여준다던지」). ⛔ 그 전에는 모든 장면이 같은
+    /// 불투명한 세이지라 겹친 장면의 경계가 사라졌다.
+    /// </summary>
+    private static Border SceneFrame(Rect area, Color fill)
     {
         var frame = new Border
         {
             Width = area.Width,
             Height = area.Height,
-            CornerRadius = new CornerRadius(8),
-            BorderThickness = new Thickness(1),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(90, 217, 119, 6)),
-            Background = new SolidColorBrush(Color.FromArgb(10, 217, 119, 6)),
+            CornerRadius = new CornerRadius(Skin.SceneFrameRadius),
+            BorderThickness = new Thickness(Skin.FrameWeight),
+            BorderBrush = Skin.SceneFrameBorder.Brush(),
+            Background = fill.Brush(),
             IsHitTestVisible = false
         };
 
@@ -1305,47 +1457,123 @@ public partial class GraphEditorView : UserControl
     /// 편다. 하이어아키의 눈과 같은 상태다.
     /// </summary>
     /// <param name="members">그 장면에 서 있는 카드(에피소드와 집이 그 장면인 분기 카드) — 테두리를 잰 그 카드들이다.</param>
-    private Border SceneLabel(Rect area, string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo)
+    /// <returns>이름표 — 자리는 화면 겹에서 <see cref="PlaceFrameLabels"/>가 정한다(늘 장면의 왼위 · 이름 그대로).</returns>
+    /// <param name="color">그 장면의 색 칸(1 ~ 5) — 이름 앞 점의 색.</param>
+    /// <param name="chosen">작가가 고른 칸 — null이면 자동(우클릭 「장면 색」의 ✓).</param>
+    /// <param name="folded">
+    /// 접은 장면이면 그 상자 — 접어도 이름표는 펼쳤을 때와 같다(2026-11-27 소유자 — 「당신이 권하는 방향대로」 · ⛔ 그 전에는 상자 머리의 작은 글뿐이라 접으면 크고
+    /// 또렷하던 이름이 사라졌다). 끝의 표만 「›」(접힘)이고, 한 번 누르면 그 장면을 골라 그대로 끌면 상자째 옮기고, 두 번 누르면 편다.
+    /// </param>
+    private Border SceneLabel(
+        string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo, int color, int? chosen,
+        FileProxyVisual? folded = null)
     {
+        Color mark = Skin.SceneMarkOf(color);
+        string fold = folded is null ? "⌄" : "›";
+        string shown = string.Format(Ui.Board_Scene, scene.DisplayName) + (hasMemo ? Ui.Board_Note : string.Empty) +
+                       (scene.HasSplitEntry ? " ⚠ " : " ") + fold;
+
         var label = new Border
         {
-            CornerRadius = new CornerRadius(3),
-            Padding = new Thickness(6, 1),
-            Background = new SolidColorBrush(Color.FromArgb(180, SceneColor.R, SceneColor.G, SceneColor.B)),
+            CornerRadius = new CornerRadius(Skin.ChipRadius),
+            Padding = new Thickness(6 + (6 * Skin.FrameLabelGrow), 1 + (4 * Skin.FrameLabelGrow)),   // 끌어 옮기는 손잡이다 — 넉넉하게(2026-11-26 소유자)
+            Background = Skin.SceneLabel.Brush(),
+            BorderThickness = new Thickness(1.5 * Skin.FrameLabelGrow),
+            BorderBrush = Skin.SceneLabelBorder.Brush(),
+            BoxShadow = Skin.FrameLabelShadow,
             Cursor = new Cursor(StandardCursorType.Hand),
-            Tag = SceneLabelTag + scene.SceneId,
-            Child = new TextBlock
-            {
-                // ⚠ 장면이 확정·롤백의 경계라는 것이 이름표에서 읽혀야 한다.
-                // 장면 메모나 에피소드 지시가 있으면 「· 메모」 — 하이어아키의 장면 줄과 같은 표시다.
-                Text = string.Format(Ui.Board_Scene, scene.DisplayName) + (hasMemo ? Ui.Board_Note : string.Empty) +
-                       (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄"),
-                FontSize = 10,
-                FontWeight = FontWeight.SemiBold,
-                Foreground = Brushes.White
-            }
+            Tag = SceneLabelTag + scene.SceneId
         };
-        ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard2);
+
+        // 이름 앞에 그 장면 색의 점 — 하이어아키 · 접은 상자 · [구성] 꼬리표와 한 색이다(design/scene-colors.md 4절). 이름표 바탕은 장면마다 같은 흰색이다 —
+        // 끌어 옮기는 손잡이의 모양은 하나다. 점 · 이름은 칸(Auto · *)에 서야 이름표 폭이 줄 때 이름이 말줄임된다.
+        double dot = Math.Round(Skin.SceneLabelFont * 0.5);
+        var name = new TextBlock
+        {
+            // ⚠ 장면이 확정·롤백의 경계라는 것이 이름표에서 읽혀야 한다.
+            // 장면 메모나 에피소드 지시가 있으면 「· 메모」 — 하이어아키의 장면 줄과 같은 표시다.
+            Text = shown,
+            Classes = { "frame-title" },
+            TextTrimming = TextTrimming.CharacterEllipsis,   // 챕터의 폭을 넘는 이름만 말줄임한다(PlaceFrameLabels)
+            FontSize = Skin.SceneLabelFont,
+            FontWeight = FontWeight.SemiBold,
+            Foreground = Skin.SceneLabelInk.Brush(),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var swatch = new Ellipse
+        {
+            Width = dot,
+            Height = dot,
+            Fill = mark.Brush(),
+            Margin = new Thickness(0, 0, Math.Round(dot * 0.7), 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = SceneDotTag
+        };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+        Grid.SetColumn(name, 1);
+        row.Children.Add(swatch);
+        row.Children.Add(name);
+        label.Child = row;
+        ToolTip.SetTip(label, folded is null ? Ui.Board_ClickToSelectEveryCard2 : Ui.Board_FoldedSceneLabelTip);
 
         string sceneId = scene.SceneId;
-        label.PointerPressed += (_, args) => OnFrameLabelPressed(
-            args,
-            members,
-            new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId),
-            () => _session?.SetSceneCollapsed(fileId, sceneId, collapsed: true));
 
-        Canvas.SetLeft(label, area.X + 10);
-        Canvas.SetTop(label, area.Y + 6);
+        // 우클릭 = 장면 색(자동 · 다섯 색 — 하이어아키의 「장면 색」과 같은 항목 · 2026-11-27 소유자 — 「권고대로」). 왼쪽 누름은 고르기 · 끌기, 두 번은 접기.
+        void Pressed(object? sender, PointerPressedEventArgs args)
+        {
+            if (args.GetCurrentPoint(label).Properties.IsRightButtonPressed)
+            {
+                args.Handled = true;
+                OpenSceneColorMenu(label, chapterId, sceneId, scene.DisplayName, color, chosen);
+                return;
+            }
 
+            if (folded is not null)
+            {
+                OnFoldedLabelPressed(
+                    args,
+                    new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId),
+                    folded,
+                    () => _session?.SetSceneCollapsed(fileId, sceneId, collapsed: false));
+                return;
+            }
+
+            OnFrameLabelPressed(
+                args,
+                members,
+                new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId),
+                () => _session?.SetSceneCollapsed(fileId, sceneId, collapsed: true));
+        }
+
+        label.PointerPressed += Pressed;
         return label;
     }
 
     // ── 챕터 간선 철도 배선 (T1) ────────────────────────────────────────────
 
-    private static readonly IBrush RailBrush = new SolidColorBrush(Color.FromArgb(170, 120, 120, 120));
-    private static readonly IBrush RailChipBrush = new SolidColorBrush(Color.FromRgb(0xC0, 0x6A, 0x14));
-    private const double RailBranchGap = 44;    // 가지 사이 세로 간격
-    private const double RailFirstDrop = 36;    // 카드 아래 첫 가지까지
+    private static IBrush RailBrush => Skin.Rail.Brush();
+
+    /// <summary>
+    /// 선택지의 길 색 — 카드 아래 칸의 차례(왼쪽부터 0 · 1 · 2)대로 셋이 돈다(2026-11-26 소유자 — 「어느 노드에서 출발해서 어떤 노드로 연결되는지 추적하기 쉽도록
+    /// 색같은 걸로 구분」 · 「선택지 문구가 왼쪽선의 것인지 오른쪽 선의 것인지 조금 헷갈리기도」). 이은 칸의 문구 · 가로 줄에서 내려오는 선 · 도착까지 가는 선이 같은
+    /// 색이다. 줄기 · 가로 줄 · 안 이은 칸은 길 하나의 것이 아니라 <see cref="RailBrush"/> 그대로다. 도착 접점 · 화살촉은 들어오는 길들이 한 색이면 그 색, 색이 다른
+    /// 길이 모이면 철도 색이다(<see cref="DrawArrivalPort"/>).
+    /// </summary>
+    internal static IBrush LaneBrush(int order) => LaneColor(order).Brush();
+
+    private static Color LaneColor(int order) => (order % 3) switch
+    {
+        0 => Skin.ChoiceLine1,
+        1 => Skin.ChoiceLine2,
+        _ => Skin.ChoiceLine3
+    };
+    private static IBrush RailChipBrush => Skin.ChoiceInk.Brush();
+    private const double RailBusDrop = 16;      // 카드 아래 가로 줄까지
+    private const double RailFirstDrop = 36;    // 카드 아래 선택지 칸(점의 가운데)까지
+    private const double RailHangGap = 10;      // 가로 줄에서 가장 큰 칸의 위 끝까지
+    private const double RailSlotGap = 22;      // 선택지 칸 사이 가로 간격(앞 칸의 문구 끝에서 다음 칸의 점까지)
+    private const double RailCrossGap = 8;      // 한 카드의 길들이 도착 위를 건너는 줄 사이 세로 간격 — 같은 높이에서 겹치지 않게
+    private const double RailClearance = 6;     // 세로 길이 다른 카드를 이만큼 안 비켜 가면 막힌 것으로 본다
     private const double RailArrivalRise = 26;  // 도착 카드 위 가운데 접점까지의 높이 (D3)
     private const double RailLaneOut = 12;      // 출발 카드 오른쪽에서 내려가는 레인까지 (D3)
     private const double RailLaneGap = 8;       // 레인끼리 가로 간격 — 같은 줄로 겹치지 않게 (D3)
@@ -1358,9 +1586,9 @@ public partial class GraphEditorView : UserControl
     internal const double RailTrunkInset = 72;
 
     /// <summary>
-    /// 챕터 간선을 철도 노선처럼 (T1, 소유자 그림) — 출발 카드에서 수직 줄기가 내려오고,
-    /// 단일 분기점에서 가지들이 갈라져 도착 카드로 들어간다. 선택은 항상 에피소드 끝이므로
-    /// (CHOICE는 파일 맨 끝 0~1개) 분기점은 하나다 — Line 비율 같은 것은 존재하지 않는다.
+    /// 챕터 간선을 철도 노선처럼 (T1, 소유자 그림) — 출발 카드에서 수직 줄기가 내려와 가로 줄이 되고, 선택지마다 그 줄에서 내려가는 제 길을 타고
+    /// 도착 카드로 들어간다(2026-11-26 소유자 — 작가들의 보드처럼 선택지가 옆으로 나란히 서고 아래로 뻗는다 · ⛔ 그 전에는 줄기에 칸이 세로로 쌓이고
+    /// 선이 카드 옆으로 돌아 내려갔다). 선택은 항상 에피소드 끝이므로(CHOICE는 파일 맨 끝 0~1개) 분기점은 하나다 — Line 비율 같은 것은 존재하지 않는다.
     /// 기본 칩은 문구만(T-D4 — 수치는 챕터 그래프의 책임), 클릭하면 읽기 전용 상세.
     /// </summary>
     /// <summary>철도를 통째로 다시 그은 횟수 — 시험이 「일을 몇 번 했는가」를 보는 창이다(에피소드 300개에서 한 번에 0.75초 · finishing FX3).</summary>
@@ -1398,7 +1626,7 @@ public partial class GraphEditorView : UserControl
 
             // 도착 포트 (2026-08-15 소유자) — 여러 선택지가 같은 에피소드로 이어지는 일이
             // 많으므로, 들어오는 가지들은 도착 카드 앞의 접점 하나로 모인다.
-            var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
+            var arrivals = new Dictionary<string, List<(string From, string Label, Color? Ink)>>(StringComparer.Ordinal);
 
             foreach ((string episodeId, (DialogueNode node, Rect _)) in board.Spots)
             {
@@ -1415,7 +1643,7 @@ public partial class GraphEditorView : UserControl
                 }
             }
 
-            foreach ((string toId, List<(string From, string Label)> incoming) in arrivals)
+            foreach ((string toId, List<(string From, string Label, Color? Ink)> incoming) in arrivals)
             {
                 (DialogueNode target, Rect rect) = board.Spots[toId];
                 RecordRailGroup(new RailOrigin.Arrival(fileId, toId, incoming), [target.Id], drawnAt,
@@ -1460,7 +1688,7 @@ public partial class GraphEditorView : UserControl
         public sealed record FromRow(string FileId, string EpisodeId) : RailOrigin(FileId);
 
         /// <summary>도착 카드 위의 접점 · 화살표 · 포트.</summary>
-        public sealed record Arrival(string FileId, string EpisodeId, List<(string From, string Label)> Incoming) : RailOrigin(FileId);
+        public sealed record Arrival(string FileId, string EpisodeId, List<(string From, string Label, Color? Ink)> Incoming) : RailOrigin(FileId);
     }
 
     /// <summary>철도 묶음 하나 — 그 그림과, 그림이 기대는 자리(카드 Id · 접은 상자 열쇠)를 그었을 때의 사각형.</summary>
@@ -1602,7 +1830,7 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>그 카드에서 나가는 가지들을 긋는다.</summary>
-    private void DrawRailsFromCard(RailBoard board, string episodeId, Dictionary<string, List<(string From, string Label)>> arrivals)
+    private void DrawRailsFromCard(RailBoard board, string episodeId, Dictionary<string, List<(string From, string Label, Color? Ink)>> arrivals)
     {
         if (!board.Spots.TryGetValue(episodeId, out (DialogueNode Node, Rect Rect) spot))
         {
@@ -1681,7 +1909,7 @@ public partial class GraphEditorView : UserControl
 
             foreach (Control visual in group.Visuals)
             {
-                visual.RenderTransform = still ? null : new TranslateTransform(by.X, by.Y);
+                FollowOffset(visual, still ? default : by);   // 점 · 화살촉의 키움(Marked)과 겹친다
             }
         }
 
@@ -1732,7 +1960,7 @@ public partial class GraphEditorView : UserControl
     private void RedrawRailGroups(
         List<RailGroup> stale,
         Dictionary<string, Rect> now,
-        Dictionary<string, List<(string From, string Label)>>? arrivals = null)
+        Dictionary<string, List<(string From, string Label, Color? Ink)>>? arrivals = null)
     {
         if (stale.Count == 0)
         {
@@ -1766,12 +1994,12 @@ public partial class GraphEditorView : UserControl
                 // 이웃 출발의 도착 장부는 그대로다 — 도착 포트는 도착 카드에만 기대어 제 묶음으로 따라간다.
                 case RailOrigin.FromCard card:
                     DrawRailsFromCard(board, card.EpisodeId,
-                        arrivals ?? new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
+                        arrivals ?? new Dictionary<string, List<(string From, string Label, Color? Ink)>>(StringComparer.Ordinal));
                     break;
 
                 case RailOrigin.FromRow row when board.Folded.TryGetValue(row.EpisodeId, out FoldedRow? folded):
                     DrawRailsFromRow(board.BoardName, row.EpisodeId, folded, board.Chapter.Edges, board.Spots, board.Folded,
-                        arrivals ?? new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
+                        arrivals ?? new Dictionary<string, List<(string From, string Label, Color? Ink)>>(StringComparer.Ordinal));
                     break;
 
                 case RailOrigin.Arrival arrival when board.Spots.TryGetValue(arrival.EpisodeId, out (DialogueNode Node, Rect Rect) spot):
@@ -1806,6 +2034,7 @@ public partial class GraphEditorView : UserControl
             .OfType<RailOrigin.Arrival>()
             .Where(arrival => string.Equals(arrival.EpisodeId, episodeId, StringComparison.Ordinal))
             .SelectMany(arrival => arrival.Incoming)
+            .Select(item => (item.From, item.Label))
             .ToList();
 
     /// <summary>
@@ -1829,7 +2058,7 @@ public partial class GraphEditorView : UserControl
         IReadOnlyList<ChapterEdge> edges,
         IReadOnlyDictionary<string, (DialogueNode Node, Rect Rect)> spots,
         IReadOnlyDictionary<string, FoldedRow> folded,
-        Dictionary<string, List<(string From, string Label)>> arrivals)
+        Dictionary<string, List<(string From, string Label, Color? Ink)>> arrivals)
     {
         // 이 에피소드의 선택지 칸들 (R7) — 가지마다 제 칸을 얹어 <b>철도 위에서</b> 고치고 잇는다.
         IReadOnlyList<GraphChoicePort> slots = ShownSlotsOf(source.Id);
@@ -1841,7 +2070,7 @@ public partial class GraphEditorView : UserControl
         // 그 자리에 끼워 넣기 때문이다(<see cref="JoinChoice"/>).
         // ⛔ 예전에는 이은 길이 늘 위로, 적어만 둔 칸이 그 아래로 모였다 — 아래 칸을 먼저 이으면 그 줄이 위로 올라가
         //    적은 순서가 뒤바뀌었다.
-        // ⚠ 자동 길은 이은 줄 가운데 맨 아래다 — 소유자 보고("진행이 선택지 위에 서니 헷갈린다"). 플레이어에게 버튼으로 안 뜨므로 선택지 순서를
+        // ⚠ 자동 길은 이은 줄 가운데 맨 뒤다 — 소유자 보고("진행이 선택지 위에 서니 헷갈린다"). 플레이어에게 버튼으로 안 뜨므로 선택지 순서를
         //   왜곡하지 않는다. 문구가 빈 선택지(자동 길이 바뀐 것 · auto-to-choice)는 버튼이라 제 자리다(2026-11-26).
         foreach (GraphChoicePort slot in slots)
         {
@@ -1871,61 +2100,106 @@ public partial class GraphEditorView : UserControl
 
         if (branches.Count == 0)
         {
+            NoteRailReach(source.Id, 0, 0);
             return;
         }
 
-        // 선택지마다 제 도착을 본다 (H1 · 2026-10-29 소유자: "연결되어 있는 하나의 루트의 선택지 방향이 바뀌길") —
-        // 도착 카드가 이 카드보다 왼쪽이면 <b>그 줄만</b> 거울에 비춘 모양이다: 점이 줄기 쪽 · 문구가 그 왼쪽에 서고,
-        // 내려가는 레인은 카드 <b>왼쪽</b>으로 빠진다. 아직 안 이은 칸은 오른쪽이다. 지금 그린 자리로 재므로 끄는 동안에도
-        // 넘어가는 순간 뒤집힌다.
-        List<bool> lefts = branches
-            .Select(branch => branch.Target is { } target
-                ? EdgeSide.GoesLeft(sourceRect.X, sourceRect.Width, target.X, target.Width)
-                : branch.Row is { } row && EdgeSide.GoesLeft(sourceRect.X, sourceRect.Width, row.Left, row.Right - row.Left))
-            .ToList();
-
         // 줄기는 <b>언제나 카드 왼쪽에서 같은 자리</b>다(<see cref="RailTrunkInset"/> · 2026-11-25 소유자 — 카드를 넓혀도 선택지가 화면 밖으로 밀려나지
-        // 않게). 문구가 길면 레인이 그만큼 바깥으로 비켜 가므로(`DrawRailBranch`의 dropX) 겹치지 않는다.
-        // ⛔ 2026-10-29 ~ 11-25에는 카드 가운데 아래였다("항상 노드 중앙 아래쪽에 선택지가 있도록") — 넓힌 카드에서 선택지가 넓힌 만큼의 절반씩
-        //    오른쪽으로 밀렸다. 그 전(H1)에는 줄들이 나가는 쪽의 반대편에 섰다 — 선 하나를 이으면 줄기가 옆으로 뛰었다.
+        // 않게). 거기서 내려와 가로 줄이 되고, 선택지 칸이 <b>칸의 차례대로 왼쪽에서 오른쪽으로</b> 나란히 선다 — 첫 칸의 점이 줄기 바로 밑이다. 칸마다
+        // 점이 가로 줄에 매달리고 문구가 그 오른쪽에 서며, 이은 칸의 선은 점 바로 밑에서 <b>아래로</b> 나간다(2026-11-26 소유자 — 「아래로 뻗어나가는 방식」 ·
+        // 「가로줄 시작은 현재의 카드 왼쪽 고정 자리」).
+        // ⛔ 2026-11-26까지는 칸이 줄기에 세로로 쌓였고(가지마다 44씩 아래로) 선은 칸 옆에서 나가 카드 바깥의 레인으로 돌아 내려갔다. 도착이 줄기보다 왼쪽이면
+        //    그 줄만 거울처럼 뒤집었다(H1 · 2026-10-29) — 아래로 나가는 지금은 쪽이 없다(소유자 — 「좌우 뒤집기는 없애도 됩니다」).
         double trunkX = sourceRect.X + RailTrunkInset;
-        double branchY = sourceRect.Bottom + RailFirstDrop;
-        int leftLane = 0;
-        int rightLane = 0;
+        double busY = sourceRect.Bottom + RailBusDrop;
+        double laneX = trunkX;
+        double lastLaneX = trunkX;
+        double right = trunkX;
+
+        // 칸을 먼저 지어 잰다 — 칸들은 한 줄(slotY)에 가운데를 맞춰 매달리는데, 가장 큰 칸(글자를 키운 카드 · 두 줄로 접힌 문구)도 가로 줄에 닿지 않는 높이다.
+        // 이은 칸은 제 길의 색을 입는다 — 문구와 선이 같은 색이다.
+        var chips = new List<(Control Chip, IBrush? Lane)>(branches.Count);
+
+        for (int index = 0; index < branches.Count; index++)
+        {
+            IBrush? lane = branches[index].Edge is null ? null : LaneBrush(index);
+            Control made = SlotChip(branches[index].Slot, source.Id, lane);
+            made.Measure(Size.Infinity);
+            chips.Add((made, lane));
+        }
+
+        double tallest = chips.Max(item => item.Chip.DesiredSize.Height);
+        double slotY = Math.Max(sourceRect.Bottom + RailFirstDrop, busY + RailHangGap + (tallest / 2));
 
         for (int index = 0; index < branches.Count; index++)
         {
             (ChapterEdge? edge, Rect? target, FoldedRow? row, GraphChoicePort slot) = branches[index];
-            bool mirrored = lefts[index];
+            (Control chip, IBrush? lane) = chips[index];
 
-            // 내려가는 레인은 카드 바깥에 가지마다 한 줄씩(쪽마다 따로 센다) — 같은 줄로 겹치면 어느 선이 어디로 가는지 안 보인다.
-            double laneX = mirrored
-                ? sourceRect.X - RailLaneOut - (leftLane++ * RailLaneGap)
-                : sourceRect.Right + RailLaneOut + (rightLane++ * RailLaneGap);
-            DrawRailBranch(chapterId, source, edge, trunkX, branchY, laneX, target, row, slot, mirrored);
+            // 건너는 줄의 높이 — 오른쪽으로 건너는 길은 왼쪽 칸일수록 아래, 왼쪽으로 건너는 길은 오른쪽 칸일수록 아래다. 그래야 한 카드의 길들이
+            // 서로를 가로지르지 않고 같은 높이에서 겹치지도 않는다.
+            double rise = target is { } aim
+                ? (aim.X + (aim.Width / 2) >= laneX ? index : branches.Count - 1 - index) * RailCrossGap
+                : 0;
+
+            DrawRailBranch(chapterId, edge, laneX, busY, slotY, rise, target, row, slot, chip, lane, spots);
 
             if (edge is not null && target is not null)
             {
                 // 도착 포트 장부 — 어느 에피소드의 어느 선택지가 여기로 들어오는가.
-                if (!arrivals.TryGetValue(edge.ToEpisodeId, out List<(string From, string Label)>? list))
+                if (!arrivals.TryGetValue(edge.ToEpisodeId, out List<(string From, string Label, Color? Ink)>? list))
                 {
-                    arrivals[edge.ToEpisodeId] = list = new List<(string, string)>();
+                    arrivals[edge.ToEpisodeId] = list = new List<(string, string, Color?)>();
                 }
 
                 list.Add((EpisodeNaming.EpisodeIdOf(source),
-                    edge.HasNoOptionLabel ? Ui.Board_Auto : edge.OptionLabel!));
+                    edge.HasNoOptionLabel ? Ui.Board_Auto : edge.OptionLabel!,
+                    LaneColor(index)));
             }
 
-            branchY += RailBranchGap;
+            lastLaneX = laneX;
+            right = laneX - PortRadius + chip.DesiredSize.Width;
+            laneX = right + RailSlotGap + PortRadius;
         }
 
-        _railVisuals.Add(RailLine(trunkX, sourceRect.Bottom, trunkX, branchY - RailBranchGap));
+        // 줄기(카드 → 가로 줄)와 가로 줄(첫 칸 → 마지막 칸). 칸이 하나면 가로 줄은 없다.
+        _railVisuals.Add(RailLine(trunkX, sourceRect.Bottom, trunkX, busY));
+
+        if (lastLaneX > trunkX)
+        {
+            _railVisuals.Add(RailLine(trunkX, busY, lastLaneX, busY));
+        }
+
+        NoteRailReach(source.Id, right - sourceRect.X, slotY + (tallest / 2) + 8 - sourceRect.Bottom);
+    }
+
+    /// <summary>
+    /// 카드 아래 선택지 칸들이 차지하는 자리 — 카드의 왼쪽 끝에서 오른쪽으로 뻗은 폭(칸이 가로로 나란히 서므로 카드보다 넓을 수 있다)과 카드 아래 끝에서 칸의
+    /// 아래 끝까지의 깊이(칸의 글자 크기를 따른다). 테두리(챕터 · 장면)가 그만큼까지 감싼다(<see cref="FrameRectOf"/>). 철도를 그을 때 적는다 — 칸의 글을 재야
+    /// 아는 값이라 테두리가 따로 재지 않는다.
+    /// </summary>
+    private readonly Dictionary<string, (double Width, double Depth)> _railReach = new(StringComparer.Ordinal);
+
+    /// <summary>적어 둔 자리가 바뀌었다 — 테두리를 그 전의 자리로 그었으니 한 번 다시 긋는다(<see cref="DrawChapterFrames"/>).</summary>
+    private bool _railReachChanged;
+
+    private void NoteRailReach(string nodeId, double width, double depth)
+    {
+        bool changed = _railReach.TryGetValue(nodeId, out (double Width, double Depth) before)
+            ? Math.Abs(before.Width - width) > 0.5 || Math.Abs(before.Depth - depth) > 0.5
+            : width > 0 || depth > 0;
+
+        if (changed)
+        {
+            _railReach[nodeId] = (width, depth);
+            _railReachChanged = true;
+        }
     }
 
     /// <summary>
     /// 접은 장면 상자의 줄에서 나가는 길 (2026-10-30 — 하이어아키의 눈). 상자는 간소화된 자리라 선택지 칸은 서지 않고, <b>이은
-    /// 길만</b> 줄의 가장자리에서 나간다 — 오른쪽(도착이 왼쪽이면 왼쪽)으로 빠져 레인을 타고 도착 카드의 접점이나 다른 상자의
-    /// 줄로 든다. 같은 상자 안끼리의 길은 긋지 않는다(상자 머리가 센다). 도착 카드가 판에 없는 길도 긋지 않는다.
+    /// 길만</b> 줄의 가장자리에서 나간다 — 오른쪽(출구 · 도착이 왼쪽이면 왼쪽)으로 빠져 레인을 타고 도착 카드의 접점이나 다른 상자의
+    /// 줄의 입구(왼쪽)로 든다. 같은 상자 안끼리의 길은 긋지 않는다(상자 머리가 센다). 도착 카드가 판에 없는 길도 긋지 않는다.
     /// </summary>
     private void DrawRailsFromRow(
         string chapterId,
@@ -1934,7 +2208,7 @@ public partial class GraphEditorView : UserControl
         IReadOnlyList<ChapterEdge> chapterEdges,
         IReadOnlyDictionary<string, (DialogueNode Node, Rect Rect)> spots,
         IReadOnlyDictionary<string, FoldedRow> folded,
-        Dictionary<string, List<(string From, string Label)>> arrivals)
+        Dictionary<string, List<(string From, string Label, Color? Ink)>> arrivals)
     {
         int leftLane = 0;
         int rightLane = 0;
@@ -1952,8 +2226,10 @@ public partial class GraphEditorView : UserControl
                 continue;
             }
 
+            // 다른 상자의 줄로 가는 길은 그 줄의 입구(왼쪽)로 들므로, 도착 상자가 온전히 오른쪽에 있을 때만 오른쪽(출구)으로 나간다 — 아니면 왼쪽으로
+            // 나가 도착 상자의 왼쪽 바깥으로 내려간다(오른쪽으로 나갔다가 되돌아오면 제 상자를 가로지른다 · <see cref="DrawLaneIntoRow"/>).
             bool left = toRow is { } arrival
-                ? EdgeSide.GoesLeft(row.Left, row.Right - row.Left, arrival.Left, arrival.Right - arrival.Left)
+                ? arrival.Left <= row.Right + RailLaneOut
                 : EdgeSide.GoesLeft(row.Left, row.Right - row.Left, toCard!.Value.X, toCard.Value.Width);
             double toward = left ? -1 : 1;
             var from = new GraphPosition(left ? row.Left : row.Right, row.Y);
@@ -1962,54 +2238,75 @@ public partial class GraphEditorView : UserControl
 
             if (toRow is not null)
             {
-                DrawLaneIntoRow(key, edge.Shape, from, toward, laneX, toRow);
+                DrawLaneIntoRow(key, edge.Shape, from, laneX, toRow);
                 continue;
             }
 
             (double junctionX, double junctionY) = ArrivalJunction(toCard!.Value);
             DrawLane(key, edge.Shape, from, toward, laneX, new GraphPosition(junctionX, junctionY));
 
-            if (!arrivals.TryGetValue(edge.ToEpisodeId, out List<(string From, string Label)>? list))
+            if (!arrivals.TryGetValue(edge.ToEpisodeId, out List<(string From, string Label, Color? Ink)>? list))
             {
-                arrivals[edge.ToEpisodeId] = list = new List<(string, string)>();
+                arrivals[edge.ToEpisodeId] = list = new List<(string, string, Color?)>();
             }
 
-            list.Add((episodeId, edge.HasNoOptionLabel ? Ui.Board_Auto : edge.OptionLabel!));
+            list.Add((episodeId, edge.HasNoOptionLabel ? Ui.Board_Auto : edge.OptionLabel!, null));
         }
     }
 
     /// <summary>
-    /// 레인을 접은 장면 상자의 줄로 들인다 — 레인이 상자 왼쪽에서 내려오면 줄의 왼쪽(들어오는 점)으로, 오른쪽에서 내려오면
-    /// 오른쪽으로 든다(왼쪽 포트의 선이 도착 카드의 오른쪽으로 드는 것과 같은 규칙).
+    /// 레인을 접은 장면 상자의 줄로 들인다 — <b>늘 줄의 왼쪽 점(입구)으로 든다</b>. 줄의 오른쪽 점은 출구다(나가는 길이 거기서 나간다 · 실행 선도 들어오는 끝은
+    /// 늘 왼쪽이다 — <see cref="ProxyRowAnchor"/>). 레인이 상자의 왼쪽 바깥보다 오른쪽에서 오면(상자가 출발보다 왼쪽에 있거나 바로 아래) 상자의 왼쪽 바깥으로
+    /// 비켜 내려와 든다 — 상자가 레인 위에 그려지므로 상자의 폭 안을 지나는 레인은 상자 뒤로 사라진다.
     ///
-    /// ⚠ <b>레인이 상자의 폭 안으로 내려오면 바깥으로 비킨다</b> — 위아래로 쌓인 판에서는 카드 오른쪽 레인이 바로 아래 상자의
-    ///   몸통을 지나 상자 뒤로 사라진다(상자가 레인 위에 그려진다). 나아가던 쪽으로 비킨다: 되돌아가면 칩을 가로지른다.
+    /// 2026-11-27 소유자 — 「다른 장면에서 Root로 연결되는 것 역시, 선택지보다 왼쪽에 있더라도 … 입구로 연결되는 게 맞는 것 같은데, 왼쪽에 있을 경우에는 출구로
+    /// 연결되어버리는 현상」. ⛔ 그 전에는 레인이 오른쪽에서 내려오면 줄의 오른쪽(출구)으로 들었다.
     /// </summary>
-    private void DrawLaneIntoRow(
-        RailKey key, EdgeShape? stored, GraphPosition from, double toward, double laneX, FoldedRow row)
+    /// <param name="fromSlot">
+    /// 카드의 선택지 칸에서 오는 길인가 — 칸에서는 아래로 나가(<see cref="EdgeShapeRouter.IntoSide"/>) 상자 위(출발이 상자보다 높으면)나 아래로 건너 상자를
+    /// 가로지르지 않는다. 아니면(다른 상자의 줄) 옆으로 나가 레인을 탄다(<see cref="EdgeShapeRouter.Lane"/>).
+    /// </param>
+    private void DrawLaneIntoRow(RailKey key, EdgeShape? stored, GraphPosition from, double laneX, FoldedRow row, bool fromSlot = false)
     {
-        if (laneX > row.Left && laneX < row.Right)
+        if (laneX > row.Left - RailLaneOut)
         {
-            laneX = toward > 0 ? row.Right + RailLaneOut : row.Left - RailLaneOut;
+            laneX = row.Left - RailLaneOut;
         }
 
-        bool fromLeft = laneX <= row.Left;
-        var entry = new GraphPosition(fromLeft ? row.Left : row.Right, row.Y);
+        var entry = new GraphPosition(row.Left, row.Y);
 
-        DrawLane(key, stored, from, toward, laneX, entry);
-        _railVisuals.Add(RailArrowInto(entry.X, entry.Y, fromLeft));
+        if (fromSlot)
+        {
+            // 세로 길이 칸 밑에서 비켜나야 하면 상자 위로 건넌다(출발이 상자 위보다 높을 때) — 아니면 상자 아래로 돌아 올라와 든다. 비켜날 것이 없으면 곧게 간다.
+            double crossY = laneX >= from.X - 0.5
+                ? entry.Y
+                : from.Y + EdgeShapeRouter.DropStep <= row.Top - RailLaneOut
+                    ? row.Top - RailLaneOut
+                    : Math.Max(from.Y + EdgeShapeRouter.DropStep, row.Bottom + RailLaneOut);
+
+            DrawLane(key, stored, (shape, preview) => EdgeShapeRouter.IntoSide(from, entry, laneX, crossY, preview ?? shape));
+        }
+        else
+        {
+            DrawLane(key, stored, from, laneX < from.X ? -1 : 1, laneX, entry);
+        }
+
+        _railVisuals.Add(RailArrowInto(entry.X, entry.Y, fromLeft: true));
     }
 
     /// <summary>옆으로 드는 화살촉 — 접은 장면 상자의 줄 가장자리에 끝이 닿는다.</summary>
     private static Polygon RailArrowInto(double x, double y, bool fromLeft)
     {
         double back = fromLeft ? -7 : 7;
-        var arrow = new Polygon
-        {
-            Fill = RailBrush,
-            IsHitTestVisible = false,
-            Points = [new Point(back, -4), new Point(0, 0), new Point(back, 4)]
-        };
+        Polygon arrow = Marked(
+            new Polygon
+            {
+                Fill = RailBrush,
+                IsHitTestVisible = false,
+                Points = [new Point(back, -4), new Point(0, 0), new Point(back, 4)]
+            },
+            8,
+            new RelativePoint(0, 0, RelativeUnit.Absolute));   // 끝(줄 가장자리)을 축으로 키운다
 
         Canvas.SetLeft(arrow, x);
         Canvas.SetTop(arrow, y);
@@ -2038,12 +2335,16 @@ public partial class GraphEditorView : UserControl
         return rows;
     }
 
-    /// <summary>접은 장면 상자의 한 줄 — 레인이 붙는 양쪽 가장자리와 줄의 가운데 높이.</summary>
+    /// <summary>접은 장면 상자의 한 줄 — 레인이 붙는 양쪽 가장자리(왼쪽이 입구 · 오른쪽이 출구)와 줄의 가운데 높이, 상자의 위아래.</summary>
     private sealed record FoldedRow(FileProxyVisual Proxy, ProxyNodeRow Row)
     {
         public double Left => Canvas.GetLeft(Proxy.Visual);
 
         public double Right => Left + ProxyWidth;
+
+        public double Top => Canvas.GetTop(Proxy.Visual);
+
+        public double Bottom => Top + ProxyHeaderHeight + (Proxy.VisualRowCount * ProxyRowHeight);
 
         public double Y => ProxyRowAnchor(Proxy, Row.Index, output: false).Y;
     }
@@ -2058,34 +2359,47 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private double RailDepthOf(string nodeId)
     {
-        int slots = ShownSlotsOf(nodeId).Count;
+        // 칸은 한 줄이다(가로로 나란히 · 2026-11-26) — 칸의 수와 상관없이 깊이가 같다. 칸의 글자 크기 · 두 줄로 접힌 문구는 철도가 그을 때 잰 깊이로 든다.
+        if (ShownSlotsOf(nodeId).Count == 0)
+        {
+            return 0;
+        }
 
-        return slots == 0 ? 0 : RailFirstDrop + ((slots - 1) * RailBranchGap) + 14;
+        return Math.Max(RailFirstDrop + 20, _railReach.TryGetValue(nodeId, out (double Width, double Depth) reach) ? reach.Depth : 0);
     }
 
-    /// <summary>프레임이 감쌀 한 카드의 자리 — 카드와 그 아래 레일까지.</summary>
+    /// <summary>프레임이 감쌀 한 카드의 자리 — 카드와 그 아래 레일까지. 선택지 칸이 카드보다 오른쪽으로 뻗었으면 그 폭까지다(<see cref="_railReach"/>).</summary>
     private Rect FrameRectOf(ExpandedNodeProjection node, NodeCard card) =>
-        new(node.Position.X, node.Position.Y, card.Visual.Width, CardHeightOf(card) + RailDepthOf(node.NodeId));
+        new(
+            node.Position.X,
+            node.Position.Y,
+            Math.Max(card.Visual.Width, _railReach.TryGetValue(node.NodeId, out (double Width, double Depth) reach) ? reach.Width : 0),
+            CardHeightOf(card) + RailDepthOf(node.NodeId));
 
     /// <summary>
     /// 도착 포트 (2026-08-15 소유자) — 들어오는 가지들이 도착 카드 앞의 접점 하나로 모인다.
     /// 누르면 어느 에피소드의 어느 선택지들이 여기로 이어지는지 목록이 열린다(읽기 전용 —
     /// 잇고 끊는 곳은 출발 쪽 칩과 챕터 그래프다).
     /// </summary>
-    private void DrawArrivalPort(Rect target, string episodeId, IReadOnlyList<(string From, string Label)> incoming)
+    private void DrawArrivalPort(Rect target, string episodeId, IReadOnlyList<(string From, string Label, Color? Ink)> incoming)
     {
         (double junctionX, double junctionY) = ArrivalJunction(target);
 
-        _railVisuals.Add(RailLine(junctionX, junctionY, junctionX, target.Y - 10));
-        _railVisuals.Add(RailArrow(junctionX, target.Y - 9));
+        // 접점 · 짧은 줄 · 화살촉은 들어오는 선과 한 색이다 — 들어오는 길들이 모두 같은 색(대개 하나)이면 그 색, 색이 다른 길이 모이면 길 하나의 것이
+        // 아니니 철도 색이다(2026-11-26 — ⛔ 그 전에는 선은 길 색, 접점은 선택지 글 색(ChoiceInk), 화살촉은 회색으로 셋이 달랐다).
+        IReadOnlyList<Color?> inks = incoming.Select(item => item.Ink).Distinct().ToList();
+        IBrush ink = inks is [Color shared] ? shared.Brush() : RailBrush;
 
-        var port = new Ellipse
+        _railVisuals.Add(RailLine(junctionX, junctionY, junctionX, target.Y - 10, ink));
+        _railVisuals.Add(RailArrow(junctionX, target.Y - 9, ink));
+
+        Ellipse port = Marked(new Ellipse
         {
             Width = 10,
             Height = 10,
-            Fill = RailChipBrush,
+            Fill = ink,
             Cursor = new Cursor(StandardCursorType.Hand)
-        };
+        }, 10);
         ToolTip.SetTip(port, Plural.Format(Ui.Board_IncomingPathsClickToOpen, incoming.Count));
         Canvas.SetLeft(port, junctionX - 5);
         Canvas.SetTop(port, junctionY - 5);
@@ -2104,11 +2418,11 @@ public partial class GraphEditorView : UserControl
                 FontWeight = FontWeight.SemiBold
             });
 
-            foreach ((string from, string label) in capturedIncoming)
+            foreach ((string From, string Label, Color? Ink) item in capturedIncoming)
             {
                 panel.Children.Add(new TextBlock
                 {
-                    Text = $"{from} · {label}",
+                    Text = $"{item.From} · {item.Label}",
                     FontSize = 11,
                     Opacity = 0.85
                 });
@@ -2137,15 +2451,20 @@ public partial class GraphEditorView : UserControl
     /// 실제로 뻗어 나가는 자리가 거기이기 때문이다 — 카드 안에 두면 이야기가 어디로
     /// 갈라지는지 한눈에 안 보인다.
     /// </summary>
-    /// <param name="mirrored">왼쪽으로 나가는 선택지(도착 카드가 이 카드보다 왼쪽, <see cref="EdgeSide"/>)의 칩 — 점이 줄기 쪽(오른쪽)에,
-    /// 문구가 그 왼쪽에 선다.</param>
-    private Control SlotChip(GraphChoicePort slot, string nodeId, bool mirrored = false)
+    /// <remarks>
+    /// 점이 왼쪽, 문구가 그 오른쪽이다 — 칸들이 카드 아래에 가로로 나란히 서고 점 바로 밑에서 선이 내려간다(2026-11-26). 긴 문구는
+    /// <see cref="SlotLabelMaxWidth"/>에서 접힌다(옆 칸을 멀리 밀어내지 않게). ⛔ 도착이 왼쪽인 칸을 거울처럼 뒤집던 모양(점이 오른쪽)은 걷혔다.
+    /// </remarks>
+    /// <param name="ink">이은 칸의 문구 색 — 그 칸의 길 색이다(<see cref="LaneBrush"/>). 안 이은 칸은 null — 점의 색(또는 테마의 문구 색)을 따른다.</param>
+    private Control SlotChip(GraphChoicePort slot, string nodeId, IBrush? ink = null)
     {
         IReadOnlyList<GraphChoicePort> ports = SlotsOf(nodeId);
         bool live = IsLive(slot, ports);
         bool auto = IsAutoSlot(slot, ports);
         string text = LabelOf(slot);
-        IBrush dot = SlotDot(slot, ports);
+        // 이은 칸의 점은 그 칸의 길 색이다 — 점 · 문구 · 선 · 도착 접점이 한 색(2026-11-26 — 디자인 점검 2번 · ⛔ 그 전에는 이은 점이 초록이었다).
+        IBrush dot = ink ?? SlotDot(slot, ports);
+        double size = SlotFontSize(nodeId);
 
         var knob = new Ellipse
         {
@@ -2165,41 +2484,29 @@ public partial class GraphEditorView : UserControl
         knob.PointerEntered += (_, _) => UiGuard.Run(_session, Ui.Board_Choice, () => HoverKnob(knob, slot, live));
         knob.PointerExited += (_, _) => UiGuard.Run(_session, Ui.Board_Choice, () => LeaveKnob(knob));
 
-        // 빈 칸(자동 자리가 아니고 문구가 없다)은 <b>적는 칸 모양</b>이다(2026-11-18 소유자 — 「무엇을 입력할 수 있다는 걸 모르는 것 같습니다」):
-        // 네모 칸에 회색 「빈 선택지」. 폭은 문구 칸(SlotEditor)의 가장 좁은 폭과 같아 누르면 그 자리에서 칸이 열린다. ⛔ 그 전의 「＋ 선택지」는
-        // 글자색을 null로 못박아(붓이 없다) 보이지 않았다 — 점만 섰다.
+        // 빈 칸(자동 자리가 아니고 문구가 없다)은 점 옆의 <b>작은 [+] 단추</b>다(2026-11-26 소유자 — 「바로 텍스트 박스를 노출 시키는 것보다는 개별
+        // 선택지 옆에 +버튼을 두는 방식」). 누르면 그 자리에서 문구 칸이 열리고 곧바로 적을 수 있다(<see cref="SlotEditor"/>가 초점을 쥔다). 세 칸은
+        // 그대로 늘 선다 — 칸마다 제 [+]다. ⛔ 2026-11-18 ~ 11-26에는 회색 「빈 선택지」가 든 적는 칸 모양의 네모였다(소유자 — 텍스트 박스가 늘 드러나
+        // 있는 것 같다). ⛔ 그 전의 「＋ 선택지」는 글자색을 null로 못박아 보이지 않았다. ⛔ 2026-11-26에 잠깐 끝의 빈 칸 하나만 「＋」로 세웠다가
+        // 같은 날 되돌렸다(소유자 — 세 칸이 늘 보이는 편이 낫다).
         Control label = !auto && text.Length == 0
-            ? new Border
+            ? AddSlotButton(size)
+            : NewSlotText(pill =>
             {
-                Width = SlotEditorMinWidth,
-                Padding = new Thickness(4, 1),
-                BorderThickness = new Thickness(1),
-                BorderBrush = SlotPlaceholderBorder,
-                CornerRadius = new CornerRadius(3),
-                Background = Brushes.White,
-                VerticalAlignment = VerticalAlignment.Center,
-                Cursor = new Cursor(StandardCursorType.Ibeam),
-                Tag = SlotPlaceholderTag,
-                Child = new TextBlock { Text = SlotPlaceholderText, FontSize = 10, Foreground = SlotPlaceholderInk },
-                [ToolTip.TipProperty] = Ui.Board_ClickToWriteChoiceText
-            }
-            : new TextBlock
-            {
-                Text = auto ? Ui.Board_Auto2 : text,
-                FontSize = 11,
-                FontWeight = FontWeight.SemiBold,
-                Foreground = dot,
-                Opacity = live ? 1 : 0.45,
-                VerticalAlignment = VerticalAlignment.Center,
-
-                // ⚠ 배경이 없으면 <b>눌림이 안 온다</b> — 투명한 TextBlock은 히트 대상이 아니다.
-                //   2026-09-16에 "문구를 적을 칸이 안 열린다"의 진짜 원인이 이것이었다.
-                Background = Brushes.Transparent,
-                Cursor = new Cursor(StandardCursorType.Ibeam),
-                [ToolTip.TipProperty] = auto
+                pill.Text = auto ? Ui.Board_Auto2 : text;
+                pill.FontSize = size;
+                pill.FontWeight = FontWeight.SemiBold;
+                pill.Foreground = ink ?? (Skin.SlotInk.A == 0 ? dot : Skin.SlotInk.Brush());
+                pill.Opacity = live ? 1 : 0.45;
+                pill.VerticalAlignment = VerticalAlignment.Center;
+                pill.MaxWidth = SlotLabelMaxWidth(size);
+                pill.TextWrapping = TextWrapping.Wrap;
+                pill.Background = Brushes.Transparent;
+                pill.Cursor = new Cursor(StandardCursorType.Ibeam);
+                pill[ToolTip.TipProperty] = auto
                     ? Ui.Board_AutoPathMovesOnWithout
-                    : Ui.Board_ClickToWriteChoiceText
-            };
+                    : Ui.Board_ClickToWriteChoiceText;
+            });
 
         // 이어졌는데 문구가 없는 선택지(자동 길이 두 번째 길에 밀려 선택지가 됐다 — auto-to-choice A2 · 회색 칸을 문구 없이 먼저 이었다 — 2026-11-26)는
         // 빨갛게 「문구를 적어 주세요」다 — 문구를 적을 때까지 검증 경고(OptionLabelBlank)이고 게임에는 임시 문구(MissingChoiceText)로 나간다
@@ -2211,12 +2518,12 @@ public partial class GraphEditorView : UserControl
                 Padding = new Thickness(4, 1),
                 BorderThickness = new Thickness(1),
                 BorderBrush = SlotNeedsLabelInk,
-                CornerRadius = new CornerRadius(3),
-                Background = Brushes.White,
+                CornerRadius = new CornerRadius(Skin.SlotRadius),
+                Background = Skin.SlotAlertSurface.Brush(),   // 문구가 없다는 것이 바탕색으로도 보인다(테마가 정한다 · 기본 테마는 흰 바탕 그대로)
                 VerticalAlignment = VerticalAlignment.Center,
                 Cursor = new Cursor(StandardCursorType.Ibeam),
                 Tag = SlotNeedsLabelTag,
-                Child = new TextBlock { Text = SlotNeedsLabelText, FontSize = 10, FontWeight = FontWeight.SemiBold, Foreground = SlotNeedsLabelInk },
+                Child = new TextBlock { Text = SlotNeedsLabelText, FontSize = size - 1, FontWeight = FontWeight.SemiBold, Foreground = SlotNeedsLabelInk },
                 [ToolTip.TipProperty] = string.Format(Ui.Board_ThisChoiceHasNoText, MissingChoiceText.For(slot.ToEpisodeId ?? string.Empty))
             };
         }
@@ -2235,6 +2542,7 @@ public partial class GraphEditorView : UserControl
             Orientation = Orientation.Horizontal,
             Spacing = 6,
             Background = Brushes.Transparent,
+            Classes = { SlotChipClass },
 
             // 어느 에피소드의 몇 번 칸인지 — 검증이 그 줄을 찾는 자리다.
             Tag = SlotKey(slot)
@@ -2242,8 +2550,7 @@ public partial class GraphEditorView : UserControl
 
         line.Children.Add(knob);
 
-        line.Children.Insert(
-            mirrored ? 0 : 1,
+        line.Children.Add(
             string.Equals(_editingSlot, SlotKey(slot), StringComparison.Ordinal)
                 ? SlotEditor(slot, nodeId)
                 : label);
@@ -2258,6 +2565,11 @@ public partial class GraphEditorView : UserControl
             _asleepKnobPress = live ? null : knob.TranslatePoint(new Point(PortRadius, PortRadius), GraphCanvas);
             BeginSlotDrag(slot, knob, nodeId);
         });
+
+        // 줄인 판에서는 그 카드의 단계를 따른다(CardStages — 글줄이면 점과 막대, 덩어리면 걷힌다). 칸의 폭은 그대로라 길 · 테두리의 셈은 배율과 상관없다.
+        line.SetValue(SlotOwnerProperty, nodeId);
+        Marked(knob, PortRadius * 2);
+        ApplySlotStage(line);
 
         return line;
     }
@@ -2325,6 +2637,8 @@ public partial class GraphEditorView : UserControl
     /// <summary>
     /// 판에 그릴 칸 — 인스펙터의 「빈 선택지 숨기기」를 켠 카드는 이은 칸만이다. 안 이은 칸은 자동 길 자리 · 적어 둔 칸까지
     /// 감춘다(적어 둔 문구는 끄면 그 자리에 돌아온다). 칸 번호는 <see cref="SlotsOf"/>의 것을 그대로 지닌다.
+    /// 그 밖의 카드는 빈 칸까지 셋이 늘 선다(2026-11-26 소유자 — 「기본 3개가 상시 보이는 게 조금 더 직관적」 · ⛔ 같은 날 잠깐 끝에 늘어선 빈 칸을
+    /// 「＋」 하나로 줄였다).
     /// </summary>
     private IReadOnlyList<GraphChoicePort> ShownSlotsOf(string nodeId)
     {
@@ -2352,14 +2666,16 @@ public partial class GraphEditorView : UserControl
         Point start = knob.TranslatePoint(new Point(PortRadius, PortRadius), GraphCanvas)
             ?? new Point(0, 0);
 
-        _connectingLine = new Line
-        {
-            StartPoint = start,
-            EndPoint = start,
-            Stroke = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB)),
-            StrokeThickness = 2,
-            StrokeDashArray = new AvaloniaList<double> { 4, 3 }
-        };
+        _connectingLine = Floored(
+            new Line
+            {
+                StartPoint = start,
+                EndPoint = start,
+                Stroke = Skin.Selection.Brush(),
+                StrokeThickness = 2,
+                StrokeDashArray = new AvaloniaList<double> { 4, 3 }
+            },
+            PickedLineFloorPx);
 
         GraphCanvas.Children.Add(_connectingLine);
 
@@ -2369,30 +2685,37 @@ public partial class GraphEditorView : UserControl
 
     private void DrawRailBranch(
         string chapterId,
-        DialogueNode source,
         ChapterEdge? edge,
-        double trunkX,
-        double y,
         double laneX,
+        double busY,
+        double y,
+        double rise,
         Rect? target,
         FoldedRow? row,
         GraphChoicePort slot,
-        bool mirrored)
+        Control chip,
+        IBrush? lane,
+        IReadOnlyDictionary<string, (DialogueNode Node, Rect Rect)> spots)
     {
-        // 나아가는 쪽 — 거울이면 왼쪽(-1)이다. 칩 · 스텁 · 레인이 모두 이 쪽으로 선다.
-        double toward = mirrored ? -1 : 1;
+        // 가로 줄에서 칸의 점으로 내려온다 — 점의 가운데가 길(laneX)이고 문구는 그 오른쪽이다. 이은 칸은 여기서부터 제 길의 색이다.
+        Line hang = RailLine(laneX, busY, laneX, y - PortRadius);
 
-        Control chip = SlotChip(slot, source.Id, mirrored);
-        chip.Measure(Size.Infinity);
+        if (lane is not null)
+        {
+            hang.Stroke = lane;
+        }
 
-        _railVisuals.Add(RailLine(trunkX, y, trunkX + (toward * 10), y));
-        Canvas.SetLeft(chip, mirrored ? trunkX - 14 - chip.DesiredSize.Width : trunkX + 14);
+        _railVisuals.Add(hang);
+        Canvas.SetLeft(chip, laneX - PortRadius);
         Canvas.SetTop(chip, y - chip.DesiredSize.Height / 2);
 
+        // 적는 동안의 칸은 옆 칸 위로 선다 — 적는 칸이 넓어져 옆 칸을 덮어도 적는 글이 가려지지 않는다.
+        if (string.Equals(_editingSlot, SlotKey(slot), StringComparison.Ordinal))
+        {
+            chip.ZIndex = 40;
+        }
+
         _railVisuals.Add(chip);
-        double cursorX = mirrored
-            ? trunkX - 14 - chip.DesiredSize.Width - 6
-            : trunkX + 14 + chip.DesiredSize.Width + 6;
 
         // 아직 안 이은 칸은 <b>여기서 끝</b>이다 — 갈 곳이 없으니 선도 없고 "종료"도 아니다
         // (2026-09-16 소유자: "연결되지 않은 상태라면 '종료'라는 글자가 표시됩니다").
@@ -2401,41 +2724,36 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
+        // 선은 점 바로 밑에서 아래로 나간다.
+        var from = new GraphPosition(laneX, y + PortRadius);
+        var key = new RailKey(chapterId, edge.FromEpisodeId, edge.ToEpisodeId, edge.OptionLabel);
+
         if (target is { } targetRect)
         {
             // 도착 포트로 모인다 (소유자 보고 — 접점만 있고 가지는 직접 붙던 결함).
-            // 화살표는 포트의 몫이다 — 가지들은 접점까지만 간다.
+            // 화살표는 포트의 몫이다 — 길들은 접점까지만 간다.
             //
-            // ⭐ 접점은 도착 카드의 <b>위 가운데</b>다 (D3 · 2026-10-29 소유자: "위에서 아래로"). 칩에서 나온
-            //    가지는 카드 바깥의 제 레인으로 빠져 <b>아래로</b> 내려가고, 접점 줄에서 가로로 들어간다.
+            // ⭐ 접점은 도착 카드의 <b>위 가운데</b>다 (D3 · 2026-10-29 소유자: "위에서 아래로"). 길은 칸 밑에서 곧게 내려가 접점의 높이에서 가로로
+            //    건너고, 내려가는 자리를 다른 카드가 막으면 그 카드들의 바깥으로 비켜 내려간다(<see cref="DetourAround"/>).
             (double junctionX, double junctionY) = ArrivalJunction(targetRect);
+            var junction = new GraphPosition(junctionX, junctionY);
 
-            double dropX = mirrored
-                ? Math.Min(cursorX - RailLaneGap, laneX)
-                : Math.Max(cursorX + RailLaneGap, laneX);
-
-            // 레인은 사람이 모양을 고칠 수 있는 선이다(G3) — 간선이 그 모양을 진다.
+            // 길은 사람이 모양을 고칠 수 있는 선이다(G3) — 간선이 그 모양을 진다.
             DrawLane(
-                new RailKey(chapterId, edge.FromEpisodeId, edge.ToEpisodeId, edge.OptionLabel),
+                key,
                 edge.Shape,
-                new GraphPosition(cursorX, y),
-                toward,
-                dropX,
-                new GraphPosition(junctionX, junctionY));
+                (stored, preview) => EdgeShapeRouter.Drop(
+                    from, junction, preview ?? stored, rise,
+                    DetourAround(laneX, from.Y + EdgeShapeRouter.DropStep, junctionY - rise, junctionX, targetRect, spots)),
+                lane);
 
             return;
         }
 
         if (row is not null)
         {
-            // 도착이 접은 장면에 들었다 (2026-10-30) — 그 상자의 줄로 든다.
-            DrawLaneIntoRow(
-                new RailKey(chapterId, edge.FromEpisodeId, edge.ToEpisodeId, edge.OptionLabel),
-                edge.Shape,
-                new GraphPosition(cursorX, y),
-                toward,
-                mirrored ? Math.Min(cursorX - RailLaneGap, laneX) : Math.Max(cursorX + RailLaneGap, laneX),
-                row);
+            // 도착이 접은 장면에 들었다 (2026-10-30) — 그 상자의 줄의 입구(왼쪽)로 든다. 상자가 왼쪽이나 바로 아래면 상자의 왼쪽 바깥으로 비켜 든다.
+            DrawLaneIntoRow(key, edge.Shape, from, laneX, row, fromSlot: true);
 
             return;
         }
@@ -2453,30 +2771,76 @@ public partial class GraphEditorView : UserControl
             string.Format(Ui.Board_CardForTargetEpisodeIsn, edge.ToEpisodeId));
         pending.Measure(Size.Infinity);
 
-        _railVisuals.Add(RailLine(cursorX, y, cursorX + (toward * 18), y));
-        Canvas.SetLeft(pending, mirrored ? cursorX - 22 - pending.DesiredSize.Width : cursorX + 22);
-        Canvas.SetTop(pending, y - pending.DesiredSize.Height / 2);
+        _railVisuals.Add(RailLine(laneX, from.Y, laneX, from.Y + 14));
+        Canvas.SetLeft(pending, laneX + 6);
+        Canvas.SetTop(pending, from.Y + 8);
         _railVisuals.Add(pending);
     }
 
-    private static Line RailLine(double x1, double y1, double x2, double y2) => new()
+    /// <summary>
+    /// 칸 밑에서 내려가는 세로 길(<paramref name="laneX"/> · <paramref name="top"/> ~ <paramref name="bottom"/>)을 이 판의 다른 카드가 막는가 — 막으면 그 카드들의
+    /// 바깥으로 비켜 갈 자리, 아니면 null(곧게 내려간다). 도착이 길보다 오른쪽(같으면 오른쪽)이면 막은 카드들의 오른쪽 바깥, 왼쪽이면 왼쪽 바깥이다.
+    /// 도착 카드는 막는 카드가 아니다(거기로 든다). 출발 카드는 길이 위로 올라갈 때(도착이 출발보다 위)만 걸린다 — 그때도 카드 뒤가 아니라 옆으로 돌아 올라간다.
+    /// 한 번만 비킨다 — 비켜 간 자리를 또 다른 카드가 막는 것까지는 보지 않는다(사람이 손잡이로 옮길 수 있다).
+    /// </summary>
+    private static double? DetourAround(
+        double laneX,
+        double top,
+        double bottom,
+        double junctionX,
+        Rect targetRect,
+        IReadOnlyDictionary<string, (DialogueNode Node, Rect Rect)> spots)
+    {
+        (double from, double to) = top <= bottom ? (top, bottom) : (bottom, top);
+        double? left = null;
+        double? right = null;
+
+        foreach ((DialogueNode _, Rect rect) in spots.Values)
+        {
+            if (rect == targetRect)
+            {
+                continue;
+            }
+
+            bool crosses = laneX > rect.X - RailClearance && laneX < rect.Right + RailClearance &&
+                           to > rect.Y && from < rect.Bottom;
+
+            if (crosses)
+            {
+                left = Math.Min(left ?? rect.X, rect.X);
+                right = Math.Max(right ?? rect.Right, rect.Right);
+            }
+        }
+
+        if (left is not { } blockedLeft || right is not { } blockedRight)
+        {
+            return null;
+        }
+
+        return junctionX >= laneX ? blockedRight + RailLaneOut : blockedLeft - RailLaneOut;
+    }
+
+    private static Line RailLine(double x1, double y1, double x2, double y2, IBrush? stroke = null) => Floored(new Line
     {
         StartPoint = new Point(x1, y1),
         EndPoint = new Point(x2, y2),
-        Stroke = RailBrush,
-        StrokeThickness = 1.4,
+        Stroke = stroke ?? RailBrush,
+        StrokeThickness = 1.4 * Skin.LineWeight,
         IsHitTestVisible = false
-    };
+    });
 
     /// <summary>아래로 드는 화살촉 — 도착 접점에서 카드 위 가운데로 든다.</summary>
-    private static Polygon RailArrow(double x, double y)
+    private static Polygon RailArrow(double x, double y, IBrush? fill = null)
     {
-        var arrow = new Polygon
-        {
-            Fill = RailBrush,
-            IsHitTestVisible = false,
-            Points = [new Point(-4, 0), new Point(0, 7), new Point(4, 0)]
-        };
+        Polygon arrow = Marked(
+            new Polygon
+            {
+                Fill = fill ?? RailBrush,
+                IsHitTestVisible = false,
+                Points = [new Point(-4, 0), new Point(0, 7), new Point(4, 0)]
+            },
+            8,
+            new RelativePoint(0, 7, RelativeUnit.Absolute));   // 끝(카드 위 가운데)을 축으로 키운다
 
         Canvas.SetLeft(arrow, x);
         Canvas.SetTop(arrow, y);
@@ -2982,7 +3346,7 @@ public partial class GraphEditorView : UserControl
                 .ToDictionary(dep => dep, dep => now[dep], StringComparer.Ordinal);
         }
 
-        var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
+        var arrivals = new Dictionary<string, List<(string From, string Label, Color? Ink)>>(StringComparer.Ordinal);
         RedrawRailGroups(from, now, arrivals);
 
         // 도착 포트 — 이 출발의 몫을 빼고 새 몫을 넣어, 출발의 차례(통째로 그을 때 도는 차례)로 다시 세운다.
@@ -3000,10 +3364,10 @@ public partial class GraphEditorView : UserControl
 
         foreach (string target in ports.Keys.Union(arrivals.Keys, StringComparer.Ordinal).ToList())
         {
-            List<(string From, string Label)> before = ports.TryGetValue(target, out RailGroup? port)
+            List<(string From, string Label, Color? Ink)> before = ports.TryGetValue(target, out RailGroup? port)
                 ? ((RailOrigin.Arrival)port.Origin).Incoming
                 : [];
-            List<(string From, string Label)> after = before
+            List<(string From, string Label, Color? Ink)> after = before
                 .Where(item => !string.Equals(item.From, episodeId, StringComparison.Ordinal))
                 .Concat(arrivals.GetValueOrDefault(target) ?? [])
                 .OrderBy(item => rank.GetValueOrDefault(item.From, int.MaxValue))
@@ -3295,6 +3659,29 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private void CommitDrag()
     {
+        // 머리 빈 곳의 두 번째 누름을 끌지 않고 놓았다 — 이제 기본 크기로 고정하고 풀기를 오간다(OnCardPressed). 손떨림만큼 움직인 자리는 적지 않는다.
+        // 누른 채 끌었으면 끌기다 — 아래로 내려가 자리를 적는다.
+        if (_pendingBasePin is { } pin)
+        {
+            _pendingBasePin = null;
+
+            if (!CardMovedFrom(pin.NodeId, pin.From))
+            {
+                CancelDrag();
+                UiGuard.Run(_session, Ui.Board_BasePin, () => ToggleBasePin(pin.NodeId));
+                return;
+            }
+        }
+
+        // 무리 안의 카드를 눌렀다가 움직이지 않고 놓았다 — 무리를 풀고 그 카드 하나만 고른다(누를 때 이미 그 카드를 골랐다 · OnCardPressed).
+        if (_draggingGroup && _groupPressedNodeId is not null && !GroupMoved())
+        {
+            _dragPositions.Clear();
+            _multiSelected.Clear();
+            HighlightSelection();
+        }
+
+        _groupPressedNodeId = null;
         _draggingCard = null;
         _draggingGroup = false;
         _draggingProxyFileId = null;
@@ -3371,7 +3758,7 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private Border BuildResizeGrip(NodeCard card, ResizeEdges edges)
     {
-        IBrush hover = new SolidColorBrush(Color.FromArgb(70, card.Style.Accent.R, card.Style.Accent.G, card.Style.Accent.B));
+        IBrush hover = card.Style.Accent.Brush(70);
 
         var grip = new Border { Background = Brushes.Transparent };
 
@@ -3425,12 +3812,18 @@ public partial class GraphEditorView : UserControl
                 return;
             }
 
-            // 카드 끌기(OnCardPressed)로 번지지 않게 여기서 받는다.
+            // 카드 끌기(OnCardPressed)로 번지지 않게 여기서 받는다. 한 카드의 크기를 바꾸므로 무리는 풀린다(2026-11-26).
             args.Handled = true;
             ReleaseWritingFocus();
             _session?.Select(card.NodeId);
 
-            if (args.ClickCount >= 2)
+            if (_multiSelected.Count > 0)
+            {
+                _multiSelected.Clear();
+                HighlightSelection();
+            }
+
+            if (Clicks.IsDouble(args))
             {
                 // 그 손잡이가 맡은 크기만 기본으로 — 다른 쪽 크기는 그대로 둔다. 기본은 기본 크기다(설정 「[대본] 카드 기본 크기」 · 2026-11-25 — ⛔ 그 전에는
                 // 가장 작은 크기였다). 기본 크기로 고정한 카드면 기본 크기 고정이 풀린다.
@@ -3495,7 +3888,8 @@ public partial class GraphEditorView : UserControl
             Orientation = Orientation.Horizontal,
             Spacing = 2,
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(4, -overflow, -overflow, -overflow)
+            Margin = new Thickness(4, -overflow, -overflow, -overflow),
+            Classes = { CardTogglesClass }   // 테마가 고른 카드 · 마우스를 올린 카드에만 보이는 손잡이(「맑은 하늘」 · 디자인 점검 5번)
         };
         toggles.Children.Add(basePin);
         toggles.Children.Add(fitWidth);
@@ -3532,7 +3926,8 @@ public partial class GraphEditorView : UserControl
         toggle.Click += (_, args) =>
         {
             args.Handled = true;
-            UiGuard.Run(_session, Ui.Board_BasePin, () => ToggleBasePin(nodeId));
+            _headerBlankPress = null;   // 단추를 누른 것은 머리 빈 곳의 첫 누름이 아니다
+            UiGuard.Run(_session, Ui.Board_BasePin, () => ToggleBasePinOnPicked(nodeId));
         };
         return toggle;
     }
@@ -3558,7 +3953,8 @@ public partial class GraphEditorView : UserControl
         toggle.Click += (_, args) =>
         {
             args.Handled = true;
-            UiGuard.Run(_session, width ? Ui.Board_FitWidth : Ui.Board_FitHeight, () => ToggleFit(nodeId, width));
+            _headerBlankPress = null;   // 단추를 누른 것은 머리 빈 곳의 첫 누름이 아니다 — 맞춰 줄어든 카드의 빈 곳이 그 자리에 와도 두 번 누름이 아니다
+            UiGuard.Run(_session, width ? Ui.Board_FitWidth : Ui.Board_FitHeight, () => ToggleFitOnPicked(nodeId, width));
         };
         return toggle;
     }
@@ -3606,8 +4002,8 @@ public partial class GraphEditorView : UserControl
         }
 
         toggle.Classes.Set(FitOnClass, on);
-        toggle.Background = new SolidColorBrush(Color.FromArgb(on ? (byte)0x40 : (byte)0x0A, accent.R, accent.G, accent.B));
-        toggle.BorderBrush = on ? new SolidColorBrush(Color.FromArgb(0x99, accent.R, accent.G, accent.B)) : Brushes.Transparent;
+        toggle.Background = accent.Brush(on ? (byte)0x40 : (byte)0x0A);
+        toggle.BorderBrush = on ? accent.Brush(0x99) : Brushes.Transparent;
         toggle.Opacity = on ? 1 : 0.5;
     }
 
@@ -3617,6 +4013,74 @@ public partial class GraphEditorView : UserControl
     /// <summary>기본 크기의 글 칸 높이를 카드에 적는 값 — 가장 작은 높이와 같으면 적지 않는다(null).</summary>
     private static double? DefaultWritingHeightValue =>
         CardDefaults.WritingHeight > WritingBoxHeight ? CardDefaults.WritingHeight : null;
+
+    /// <summary>
+    /// 카드 머리의 단추(기본 크기로 고정 · 가로 · 세로 글 맞춤)가 입힐 카드들 — 누른 카드가 무리(<see cref="_multiSelected"/> · 범위로 긋거나 Ctrl+누름으로 모은
+    /// 것) 안이면 무리 전체(판의 차례), 아니면 그 카드 하나(2026-11-27 소유자 — 「여러개의 에피소드 노드를 드래그해서 동시에 선택한 상태에서 … 선택한 것들
+    /// 모두에게 적용이 되도록」).
+    /// </summary>
+    /// <summary>지금 무리로 고른 카드들(범위 · 이름표 · Ctrl+누름) — 화면 시험의 손잡이. 무리가 없으면 비었다.</summary>
+    internal IReadOnlyCollection<string> GroupedNodeIds => _multiSelected;
+
+    private List<string> PickedForButtons(string nodeId) =>
+        _multiSelected.Count > 1 && _multiSelected.Contains(nodeId)
+            ? _cards.Select(card => card.NodeId).Where(_multiSelected.Contains).Distinct(StringComparer.Ordinal).ToList()
+            : [nodeId];
+
+    /// <summary>
+    /// [기본 크기로 고정] 단추 — 무리면 무리 전체에 <b>누른 카드가 바뀌는 쪽으로</b> 맞춘다(누른 카드가 풀려 있으면 모두 고정, 고정돼 있으면 모두 풀기 — 이미
+    /// 그쪽인 카드는 그대로). 되돌리기 한 칸이다.
+    /// </summary>
+    internal void ToggleBasePinOnPicked(string nodeId)
+    {
+        List<string> targets = PickedForButtons(nodeId);
+
+        if (targets.Count <= 1 || _session?.Project.FindNode(nodeId)?.Layout is not { } clicked)
+        {
+            ToggleBasePin(nodeId);
+            return;
+        }
+
+        bool pin = !clicked.PinnedToBase;
+        _session.Editor.Batch(() =>
+        {
+            foreach (string id in targets)
+            {
+                if (_session.Project.FindNode(id)?.Layout is { } layout && layout.PinnedToBase != pin)
+                {
+                    ToggleBasePin(id);
+                }
+            }
+        });
+        _session.SetStatus(string.Format(Ui.Board_AppliedToPickedCards, targets.Count, _session.StatusMessage));
+    }
+
+    /// <summary>
+    /// [가로 · 세로 글 맞춤] 단추 — 무리면 무리 전체를 <b>누른 카드가 바뀌는 쪽으로</b> 맞춘다(켜기 · 끄기 — 이미 그쪽인 카드는 그대로). 되돌리기 한 칸이다.
+    /// </summary>
+    internal void ToggleFitOnPicked(string nodeId, bool width)
+    {
+        List<string> targets = PickedForButtons(nodeId);
+
+        if (targets.Count <= 1 || _session?.Project.FindNode(nodeId)?.Layout is not { } clicked)
+        {
+            ToggleFit(nodeId, width);
+            return;
+        }
+
+        bool on = !(width ? clicked.FitWidth : clicked.FitHeight);
+        _session.Editor.Batch(() =>
+        {
+            foreach (string id in targets)
+            {
+                if (_session.Project.FindNode(id)?.Layout is { } layout && (width ? layout.FitWidth : layout.FitHeight) != on)
+                {
+                    ToggleFit(id, width);
+                }
+            }
+        });
+        _session.SetStatus(string.Format(Ui.Board_AppliedToPickedCards, targets.Count, _session.StatusMessage));
+    }
 
     /// <summary>
     /// <b>기본 크기로 고정하고 풀기를 오간다</b>(2026-11-25 소유자 — 「노드의 머리부분 중, 제목영역이 아닌 우측 빈 공간을 더블 클릭 했을 시에, 이런 가로 세로 크기 맞춤을
@@ -3696,8 +4160,8 @@ public partial class GraphEditorView : UserControl
         }
 
         toggle.Classes.Set(FitOnClass, on);
-        toggle.Background = new SolidColorBrush(Color.FromArgb(on ? (byte)0x40 : (byte)0x0A, accent.R, accent.G, accent.B));
-        toggle.BorderBrush = on ? new SolidColorBrush(Color.FromArgb(0x99, accent.R, accent.G, accent.B)) : Brushes.Transparent;
+        toggle.Background = accent.Brush(on ? (byte)0x40 : (byte)0x0A);
+        toggle.BorderBrush = on ? accent.Brush(0x99) : Brushes.Transparent;
         toggle.Opacity = on ? 1 : 0.5;
         ToolTip.SetTip(toggle, (width ? FitWidthTip : FitHeightTip) + (on ? FitOnTip : FitOffTip));
     }
@@ -3958,7 +4422,7 @@ public partial class GraphEditorView : UserControl
     private static Avalonia.Controls.Shapes.Path FitGlyph(Geometry glyph, Color accent) => new()
     {
         Data = glyph,
-        Stroke = new SolidColorBrush(accent),
+        Stroke = accent.Brush(),
         StrokeThickness = 1.7,
         StrokeLineCap = PenLineCap.Round,
         StrokeJoin = PenLineJoin.Round,
@@ -4024,11 +4488,23 @@ public partial class GraphEditorView : UserControl
         }
     }
 
+    /// <summary>그 카드를 끌어 처음 자리에서 <see cref="ClickSlop"/> 넘게 옮겼는가 — 끄는 동안의 자리(<see cref="_dragPositions"/>)로 잰다.</summary>
+    private bool CardMovedFrom(string nodeId, Point from) =>
+        _dragPositions.TryGetValue(nodeId, out Point now) &&
+        (Math.Abs(now.X - from.X) > ClickSlop || Math.Abs(now.Y - from.Y) > ClickSlop);
+
+    /// <summary>무리 끌기가 실제로 움직였는가 — 어느 카드든 처음 자리에서 <see cref="ClickSlop"/> 넘게 옮겨졌다.</summary>
+    private bool GroupMoved() =>
+        _dragPositions.Any(pair => _groupStartPositions.TryGetValue(pair.Key, out Point start) &&
+                                   (Math.Abs(pair.Value.X - start.X) > ClickSlop || Math.Abs(pair.Value.Y - start.Y) > ClickSlop));
+
     /// <summary>
     /// 끌기를 걷는다 — 더블클릭의 첫 누름이 시작한 끌기다. 화면만 움직였으니 프로젝트 자리로 되돌려 놓는다.
     /// </summary>
     private void CancelDrag()
     {
+        _groupPressedNodeId = null;
+        _pendingBasePin = null;
         _draggingCard = null;
         _draggingGroup = false;
         _draggingProxyFileId = null;
@@ -4112,11 +4588,18 @@ public partial class GraphEditorView : UserControl
             bool selected = string.Equals(card.NodeId, _session?.SelectedNodeId, StringComparison.Ordinal);
             bool grouped = _multiSelected.Contains(card.NodeId); // 범위 선택 무리 (W40)
 
-            card.Visual.BorderBrush = selected || grouped
-                ? new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB))
-                : new SolidColorBrush(card.Style.Border);
+            PaintCardEdge(card, selected || grouped);   // 테두리 · 그림자 — 줄인 판에서도 화면 바닥을 지킨다(LineFloor)
+            card.Visual.Classes.Set(PickedCardClass, selected || grouped);
 
-            card.Visual.BorderThickness = new Thickness(selected || grouped ? 2 : 1);
+            if (card.Ribbon is { } ribbon)
+            {
+                ribbon.IsVisible = selected;
+            }
+
+            if (card.Band is { } band)
+            {
+                band.Background = (selected || grouped ? Skin.SelectedBand : card.Style.Band).Brush();
+            }
         }
 
         foreach (FileProxyVisual proxy in _proxies)
@@ -4125,7 +4608,7 @@ public partial class GraphEditorView : UserControl
             {
                 bool selected = string.Equals(row.NodeId, _session?.SelectedNodeId, StringComparison.Ordinal);
                 row.Visual.Background = selected
-                    ? new SolidColorBrush(Color.FromArgb(42, 37, 99, 235))
+                    ? Skin.Selection.Brush(42)
                     : Brushes.Transparent;
             }
         }
@@ -4149,8 +4632,9 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>노드 종 하나의 시각 언어 — 등뼈(왼쪽 색 막대)·바탕·테두리·모서리·아이콘.</summary>
+    /// <param name="Band">머리 띠의 색 — 투명이면 띠를 짓지 않는다(기본 테마 · themes).</param>
     private readonly record struct CardStyle(
-        Color Accent, Color Background, Color Border, double Radius, string Icon);
+        Color Accent, Color Background, Color Border, double Radius, string Icon, Color Band, Color Block);
 
     /// <summary>
     /// 종별 시각 체계 (2026-08-15 소유자 — "대본노드와 엑셀노드가 똑같이 생겨서 구분이 어렵다").
@@ -4166,17 +4650,13 @@ public partial class GraphEditorView : UserControl
     {
         // 분기 카드(2026-11-17) — 들렀다 돌아오는 카드. 에피소드와 다른 물건이라 색 · 표가 다르다(보라 · ⑂).
         GraphNodeKind.Dialogue when branchCard => new CardStyle(
-            Color.FromRgb(0x7C, 0x5C, 0xC4), Color.FromRgb(0xF6, 0xF3, 0xFC),
-            Color.FromRgb(0xD5, 0xCB, 0xEE), 4, "⑂"),
+            Skin.BranchAccent, Skin.BranchSurface, Skin.BranchBorder, Skin.CardRadius, "⑂", Skin.BranchBand, Skin.BlockBranch),
         GraphNodeKind.Dialogue when sceneRoot => new CardStyle(
-            Color.FromRgb(0x3D, 0x7B, 0xD9), Color.FromRgb(0xEF, 0xF4, 0xFC),
-            Color.FromRgb(0xC3, 0xD5, 0xEF), 4, "⌂"),
+            Skin.SceneRootAccent, Skin.SceneRootSurface, Skin.SceneRootBorder, Skin.CardRadius, "⌂", Skin.SceneRootBand, Skin.BlockSceneRoot),
         GraphNodeKind.Dialogue => new CardStyle(
-            Color.FromRgb(0xD9, 0x77, 0x06), Color.FromRgb(0xFB, 0xF6, 0xEA),
-            Color.FromRgb(0xE3, 0xD5, 0xB7), 4, "📄"),
+            Skin.EpisodeAccent, Skin.EpisodeSurface, Skin.EpisodeBorder, Skin.CardRadius, "📄", Skin.EpisodeBand, Skin.BlockEpisode),
         _ => new CardStyle(
-            Color.FromRgb(0x3B, 0x82, 0xF6), Color.FromRgb(0xEF, 0xF6, 0xFF),
-            Color.FromArgb(90, 128, 128, 128), 10, "⚙")
+            Skin.OtherCardAccent, Skin.OtherCardSurface, Skin.OtherCardBorder, Skin.OtherCardRadius, "⚙", Skin.OtherCardBand, Skin.BlockOther)
     };
 
     /// <summary>분기로 다녀오는 카드 → 그 분기 선의 색 번호. 판을 다시 세울 때마다 묻는다(<see cref="BranchEntries"/>).</summary>
@@ -4233,7 +4713,7 @@ public partial class GraphEditorView : UserControl
 
         var chip = new Border
         {
-            CornerRadius = new CornerRadius(3),
+            CornerRadius = new CornerRadius(Skin.ChipRadius),
             Padding = new Thickness(4, 0),
             Margin = new Thickness(4, 0, 0, 0),
             BorderThickness = new Thickness(1),
@@ -4306,7 +4786,7 @@ public partial class GraphEditorView : UserControl
         {
             Text = branchCard ? string.Format(Ui.Board_Branch, style.Icon) : style.Icon,
             FontSize = 11,
-            Foreground = new SolidColorBrush(style.Accent),
+            Foreground = style.Accent.Brush(),
             Margin = new Thickness(0, 0, 5, 0),
             VerticalAlignment = VerticalAlignment.Center,
             [ToolTip.TipProperty] = sceneRoot
@@ -4321,6 +4801,7 @@ public partial class GraphEditorView : UserControl
         {
             Text = ShownName(node.NodeId, node.NodeName),
             Tag = CardTitleTag,   // 제목만 바뀌면 이 글만 고친다(RefreshCardTitle)
+            Classes = { "card-title" },   // 테마가 제목 글꼴을 고르는 손잡이(Themes/*/Controls.axaml)
             FontWeight = FontWeight.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
@@ -4369,7 +4850,8 @@ public partial class GraphEditorView : UserControl
         var spine = new Border
         {
             Width = 3,
-            Background = new SolidColorBrush(style.Accent),
+            Background = style.Accent.Brush(),
+            Opacity = Skin.CardSpineOpacity,   // 테마가 등뼈를 감출 수 있다(머리 띠를 쓰는 테마) — 자리는 그대로라 카드의 치수는 같다
             CornerRadius = new CornerRadius(1.5),
             Margin = new Thickness(0, 1, SpineInset - 3, 1),
             VerticalAlignment = VerticalAlignment.Stretch
@@ -4383,18 +4865,59 @@ public partial class GraphEditorView : UserControl
 
         // 카드 안의 한 겹 — 내용 위에 오른쪽 가장자리의 폭 손잡이가 얹힌다(아래 BuildResizeGrip).
         var frame = new Panel();
+
+        // 머리 띠 — 제목 줄 뒤에 카드 폭 가득 깔리는 색 면(테마가 색을 줄 때만 · themes). 카드의 안 여백을 거슬러 테두리 안쪽까지 닿고, 누름을 받지 않는다.
+        // 기본 테마는 띠가 투명이라 짓지 않는다 — 카드의 짜임이 0.5.0까지와 같다.
+        Border? band = style.Band.A == 0
+            ? null
+            : new Border
+            {
+                Height = CardPadding + TitleHeight + (HeaderGap / 2),
+                Margin = new Thickness(-CardPadding, -CardPadding, -CardPadding, 0),
+                CornerRadius = new CornerRadius(Math.Max(0, style.Radius - 1), Math.Max(0, style.Radius - 1), 0, 0),
+                Background = style.Band.Brush(),
+                VerticalAlignment = VerticalAlignment.Top,
+                IsHitTestVisible = false
+            };
+
+        if (band is not null)
+        {
+            frame.Children.Add(band);
+        }
+
         frame.Children.Add(layout);
+
+        // 리본 — 고른 카드의 머리 위에 꽂히는 책갈피(테마가 색을 줄 때만 · themes). 카드 위쪽 가장자리에 걸쳐 서고 누름을 받지 않는다.
+        ShapePath? ribbon = Skin.SelectedRibbon.A == 0
+            ? null
+            : new ShapePath
+            {
+                Data = Geometry.Parse("M0,0 H14 V20 L7,15 L0,20 Z"),
+                Fill = Skin.SelectedRibbon.Brush(),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, -(CardPadding + 8), 64, 0),
+                IsVisible = false,
+                IsHitTestVisible = false
+            };
+
+        if (ribbon is not null)
+        {
+            frame.Children.Add(ribbon);
+        }
 
         var card = new Border
         {
             Width = WidthFor(node.NodeId),
             Padding = new Thickness(CardPadding),
             CornerRadius = new CornerRadius(style.Radius),
-            Background = new SolidColorBrush(style.Background),
+            Background = style.Background.Brush(),
             BorderThickness = new Thickness(1),
-            BorderBrush = new SolidColorBrush(style.Border),
+            BorderBrush = style.Border.Brush(),
+            BoxShadow = Skin.CardShadow,
             Child = frame,
-            Tag = node.NodeId
+            Tag = node.NodeId,
+            Classes = { BoardCardClass }   // 테마의 손잡이 — 고른 카드에는 PickedCardClass가 붙는다(HighlightSelection)
         };
 
         // ⛔ <b>선택지 칸은 카드 안에 없다</b> (2026-09-16 소유자: "아래쪽으로 3개").
@@ -4412,6 +4935,9 @@ public partial class GraphEditorView : UserControl
             BranchPalette = branchEntry ? palette : null,
             Title = titleName,
             TitleRow = title,
+            Band = band,
+            Ribbon = ribbon,
+            Frame = frame,
             BasePinToggle = basePin,
             FitWidthToggle = fitWidth,
             FitHeightToggle = fitHeight
@@ -4438,6 +4964,14 @@ public partial class GraphEditorView : UserControl
                 // 칸이 배치를 마칠 때마다(처음 · 크기 · 스크롤 · 글이 바뀔 때) 분기 점의 높이를 다시 잰다.
                 box.LayoutUpdated += (_, _) => MeasureLineAnchors(visual);
             }
+
+            // 인스펙터에서 쓰고 있는 줄의 표시도 같은 때에 따라간다(글이 바뀌면 줄의 자리 · 높이가 바뀐다).
+            box.LayoutUpdated += (_, _) => PlaceEditingMarker(visual);
+
+            // 글줄 단계의 막대는 글 칸이 실제로 배치한 줄로 짓는다 — 글이나 칸의 크기가 바뀌면 다음 배치 뒤에 다시 짓는다(CardStages).
+            box.TextChanged += (_, _) => visual.BarsDirty = true;
+            box.SizeChanged += (_, _) => visual.BarsDirty = true;
+            box.LayoutUpdated += (_, _) => RefreshBarsIfDirty(visual);
         }
 
         frame.Children.Add(BuildResizeGrip(visual, ResizeEdges.Right));
@@ -4485,6 +5019,9 @@ public partial class GraphEditorView : UserControl
         // 더블클릭이 [구성] 탭의 그 에피소드로 데려갔다.
         // ⛔ 옛 「무대에서 본다」는 2026-10-29에 무대가 ked-story-compositor로 가며 사라졌다.
 
+        // 줄인 판에서 지은 카드는 곧바로 제 단계의 그림으로 선다(CardStages). 테두리의 화면 바닥 · 그림자도(LineFloor).
+        InitCardStage(visual);
+        PaintCardEdge(visual, CardIsPicked(node.NodeId));
         return visual;
     }
 
@@ -4521,6 +5058,7 @@ public partial class GraphEditorView : UserControl
         // 서식이 든 카드만 서식을 그리는 글 칸(WriterTextBox)을 받는다 — 서식 없는 카드는 dev와 같은 보통 TextBox다(writer-formatting · 2026-11-22
         // 소유자 보고: 윈도에서 Enter를 치면 칸이 맨 위로 스크롤됐다 — dev에는 없음). 서식이 생기거나 다 걷히면 그 카드를 다시 지어 칸을 바꾼다(UpdateLooks).
         TextBox box = WantsWriterBox(nodeId) ? new WriterTextBox() : new TextBox();
+        box.Classes.Add("card-writing");   // 테마가 카드 글 칸의 테두리 · 바탕을 고르는 손잡이(Themes/*/Controls.axaml)
         box.Text = shown;
         box.AcceptsReturn = true;
         box.TextWrapping = TextWrapping.Wrap;
@@ -4545,8 +5083,21 @@ public partial class GraphEditorView : UserControl
                 _session?.Select(nodeId);
             }
 
+            // 한 카드의 글을 쓰기 시작했다 — 무리(이름표 · 범위로 고른 것)는 풀린다(2026-11-26).
+            if (_multiSelected.Count > 0)
+            {
+                _multiSelected.Clear();
+                HighlightSelection();
+            }
+
             // 서식 도구 막대가 입힐 칸이다(writer-formatting).
             TrackFormatTarget(nodeId, box);
+
+            // 인스펙터의 고른 줄이 커서의 줄을 따라온다 — 칸에 다시 들어오면 같은 줄이어도 다시 알린다(그 사이에 인스펙터에서 다른 줄을 골랐을 수 있다).
+            // 누른 자리의 커서는 초점 뒤에 놓이므로 한 번 더 미뤄 본다.
+            _caretLine = null;
+            NoteCaretLine(nodeId, box);
+            Dispatcher.UIThread.Post(() => NoteCaretLine(nodeId, box));
         };
 
         box.PropertyChanged += (_, args) =>
@@ -4554,6 +5105,7 @@ public partial class GraphEditorView : UserControl
             if (args.Property == TextBox.SelectionStartProperty || args.Property == TextBox.SelectionEndProperty)
             {
                 TrackFormatTarget(nodeId, box);
+                NoteCaretLine(nodeId, box);
             }
         };
 
@@ -4600,6 +5152,9 @@ public partial class GraphEditorView : UserControl
 
             // 서식은 쓰는 대로 같은 글자를 따라간다 — 넣을 때와 같은 셈으로 칸의 글에 다시 놓는다(writer-formatting).
             UpdateLooks(nodeId, box);
+
+            // 줄을 넣고 지우면 커서가 선 대본 줄도 바뀐다.
+            NoteCaretLine(nodeId, box);
         };
 
         // 조합 중인 글자도 화면의 크기를 따라가게 한다(한글은 다음 글자를 칠 때까지 칸의 글이 아니다).
@@ -4724,6 +5279,9 @@ public partial class GraphEditorView : UserControl
 
             TextBox current = _writingBoxes.GetValueOrDefault(nodeId) ?? box;
             MarkWriting(current, problem: null);
+
+            // 쓰다 멈춰 넣었다 — 새로 쓴 줄이 이제 대본 줄이다. 커서가 그 줄에 있으면 인스펙터도 그 줄로 간다.
+            NoteCaretLine(nodeId, current);
 
             // 글 맞춤을 켠 카드는 넣을 때마다 글에 맞는다(2026-11-25 소유자 — 「이 버튼을 킨 상태라면 글을 쓰면서 자동으로」) — 쓰다 멈출 때(0.4초) ·
             // 칸을 나올 때. 맞춘 크기는 이 넣기의 되돌리기 칸에 든다(FitNodeSize). 칸을 나올 때는 아래에서 칸을 도구의 표기로 다시 쓴 뒤에 잰다.
@@ -5123,7 +5681,7 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        box.BorderBrush = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+        box.BorderBrush = Skin.Danger.Brush();
         ToolTip.SetTip(box, problem);
     }
 
@@ -5199,10 +5757,11 @@ public partial class GraphEditorView : UserControl
         // 이 수를 쓴다(노드 행 수만 쓰면 머리글만큼 짧아진다).
         int visualRows = 0;
 
+        // 이름은 표 위 바깥의 챕터 이름표가 말한다(<see cref="FoldedChapterLabel"/>) — 머리는 접힘 · 노드 수 · 파일 자리만(2026-11-27).
         content.Children.Add(ProxyHeader(
-            file.FileName,
-            Plural.Format(Ui.Board_FoldedNodes, file.Nodes.Count, file.RelativePath),
-            new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80))));
+            Plural.Format(Ui.Board_FoldedNodes2, file.Nodes.Count),
+            file.RelativePath,
+            Skin.Neutral.Brush()));
 
         var rows = new List<ProxyNodeRow>();
 
@@ -5230,7 +5789,7 @@ public partial class GraphEditorView : UserControl
             {
                 if (scene.HasHeader)
                 {
-                    content.Children.Add(BuildProxySceneHeader(scene));
+                    content.Children.Add(BuildProxySceneHeader(scene, scene.SceneId.Length == 0 ? null : SceneColorOf(file.FileId, scene.SceneId)));
                     visualRows++;
                 }
 
@@ -5247,8 +5806,8 @@ public partial class GraphEditorView : UserControl
         {
             Width = ProxyWidth,
             CornerRadius = new CornerRadius(8),
-            Background = new SolidColorBrush(Color.FromRgb(0xF3, 0xF4, 0xF6)),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(0x9C, 0xA3, 0xAF)),
+            Background = Skin.ProxySurface.Brush(),
+            BorderBrush = Skin.NeutralLight.Brush(),
             BorderThickness = new Thickness(1),
             ClipToBounds = false,
             Child = content,
@@ -5291,11 +5850,13 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private FileProxyVisual BuildSceneProxy(CollapsedSceneProjection scene)
     {
+        int color = SceneColorOf(scene.FileId, scene.SceneId);
         var content = new StackPanel { Spacing = 0 };
+        // 이름은 상자 위 바깥의 장면 이름표가 말한다(<see cref="SceneLabel"/>) — 머리는 접힘 · 노드 수 · 안쪽 길 수만(2026-11-27).
         content.Children.Add(ProxyHeader(
-            string.Format(Ui.Board_Scene, scene.DisplayName),
             Plural.Format(Ui.Board_FoldedNodes2, scene.Nodes.Count) + (scene.InnerCount > 0 ? Plural.Format(Ui.Board_PathsInside, scene.InnerCount) : string.Empty),
-            new SolidColorBrush(SceneColor)));
+            null,
+            Skin.SceneMarkOf(color).Brush()));
 
         var rows = new List<ProxyNodeRow>();
 
@@ -5310,8 +5871,8 @@ public partial class GraphEditorView : UserControl
         {
             Width = ProxyWidth,
             CornerRadius = new CornerRadius(8),
-            Background = new SolidColorBrush(Color.FromRgb(0xFE, 0xF7, 0xEC)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(170, SceneColor.R, SceneColor.G, SceneColor.B)),
+            Background = Skin.SceneProxyFillOf(color).Brush(),   // 펼친 장면과 같은 색 — 상자는 비치지 않는다(아래 선이 보이지 않게)
+            BorderBrush = Skin.SceneMarkOf(color).Brush(170),
             BorderThickness = new Thickness(1),
             ClipToBounds = false,
             Child = content,
@@ -5342,11 +5903,14 @@ public partial class GraphEditorView : UserControl
             _session?.SetSceneCollapsed(scene.FileId, scene.SceneId, collapsed: false);
         };
 
-        return new FileProxyVisual(scene.FileId, visual, rows, Math.Max(1, rows.Count), scene.SceneId);
+        return new FileProxyVisual(scene.FileId, visual, rows, Math.Max(1, rows.Count), scene.SceneId, color);
     }
 
-    /// <summary>상자 머리 — 색 점 · 이름 · 한 줄 설명. 접힌 판과 접은 장면이 함께 쓴다.</summary>
-    private static Grid ProxyHeader(string title, string subtitle, IBrush dot)
+    /// <summary>
+    /// 상자 머리 — 색 점 · 접힘과 수 · (판이면) 파일 자리. 접힌 판과 접은 장면이 함께 쓴다. 이름은 상자 위 바깥의 이름표가 말한다(2026-11-27 — ⛔ 그 전에는
+    /// 여기에 굵은 이름이 섰다).
+    /// </summary>
+    private static Grid ProxyHeader(string title, string? subtitle, IBrush dot)
     {
         var headerDot = new Ellipse
         {
@@ -5365,12 +5929,14 @@ public partial class GraphEditorView : UserControl
                 new TextBlock
                 {
                     Text = title,
-                    FontWeight = FontWeight.SemiBold,
+                    FontSize = 11,
+                    Opacity = 0.75,
                     TextTrimming = TextTrimming.CharacterEllipsis
                 },
                 new TextBlock
                 {
-                    Text = subtitle,
+                    Text = subtitle ?? string.Empty,
+                    IsVisible = subtitle is { Length: > 0 },
                     FontSize = 9,
                     Opacity = 0.6,
                     TextTrimming = TextTrimming.CharacterEllipsis
@@ -5420,33 +5986,51 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 접힌 판 안의 <b>장면 머리글</b> 한 줄 (R6 S-3).
+    /// 접힌 판 안의 <b>장면 머리글</b> 한 줄 (R6 S-3). 장면이면 이름 앞에 그 장면 색의 점이 선다(2026-11-27 — 판의 장면 이름표 · 하이어아키와 한 색 ·
+    /// ⛔ 그 전에는 「▸」).
     ///
     /// ⚠ 누를 수 없다 — 장면은 담는 자리이고, 고르는 것은 노드다
     /// (R6-explorer §1). 여기서 누르면 판 끌기가 된다.
     /// </summary>
-    private static Border BuildProxySceneHeader(CollapsedSceneGroup scene) =>
-        new()
+    /// <param name="color">그 장면의 색 칸 — 장면 밖 묶음이면 null(점 없음).</param>
+    private static Border BuildProxySceneHeader(CollapsedSceneGroup scene, int? color)
+    {
+        var name = new TextBlock
         {
-            Height = ProxyRowHeight,
-            Background = new SolidColorBrush(Color.FromArgb(26, 107, 114, 128)),
-            Child = new TextBlock
-            {
-                Text = scene.SceneId.Length == 0 ? scene.DisplayName : "▸ " + scene.DisplayName,
-                Margin = new Thickness(14, 0),
-                FontSize = 10,
-                FontWeight = FontWeight.SemiBold,
-                Opacity = 0.7,
-                VerticalAlignment = VerticalAlignment.Center,
-                [ToolTip.TipProperty] = scene.SceneId.Length == 0
-                    ? Ui.Board_NodesNotInThisChapter
-                    : string.Format(Ui.Board_SceneEpisodesInSameScene, scene.DisplayName)
-            }
+            Text = scene.DisplayName,
+            FontSize = 10,
+            FontWeight = FontWeight.SemiBold,
+            Opacity = 0.7,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center
         };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(14, 0), VerticalAlignment = VerticalAlignment.Center };
+
+        if (color is int slot)
+        {
+            row.Children.Add(new Ellipse
+            {
+                Width = 7,
+                Height = 7,
+                Fill = Skin.SceneMarkOf(slot).Brush(),
+                Margin = new Thickness(0, 0, 6, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Tag = SceneDotTag
+            });
+        }
+
+        row.Children.Add(name);
+
+        var header = new Border { Height = ProxyRowHeight, Background = Skin.Neutral.Brush(26), Child = row };
+        ToolTip.SetTip(header, scene.SceneId.Length == 0
+            ? Ui.Board_NodesNotInThisChapter
+            : string.Format(Ui.Board_SceneEpisodesInSameScene, scene.DisplayName));
+        return header;
+    }
 
     private ProxyNodeRow BuildProxyRow(CollapsedNodeEntry entry, int index)
     {
-        IBrush dotBrush = new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80));
+        IBrush dotBrush = Skin.Neutral.Brush();
 
         var input = new Ellipse
         {
@@ -5495,7 +6079,7 @@ public partial class GraphEditorView : UserControl
         {
             Height = ProxyRowHeight,
             Padding = new Thickness(0, 0),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(35, 107, 114, 128)),
+            BorderBrush = Skin.Neutral.Brush(35),
             BorderThickness = new Thickness(0, index == 0 ? 1 : 0, 0, 1),
             Child = grid,
             Cursor = new Cursor(StandardCursorType.Hand),
@@ -5719,21 +6303,21 @@ public partial class GraphEditorView : UserControl
     /// <summary>지금 문구를 적고 있는 칸 — <b>테스트의 손잡이</b>이자 실제 입력칸이다.</summary>
     internal TextBox? SlotLabelBox { get; private set; }
 
-    /// <summary>안 이은 활성 칸의 붉은 점.</summary>
-    internal static readonly IBrush SlotLive = new SolidColorBrush(Color.FromRgb(0xD9, 0x3A, 0x3A));
+    /// <summary>안 이은 활성 칸(자동 자리 · 문구를 적은 칸)의 속이 찬 점 — 「맑은 하늘」은 진한 회색이다(빨강은 위험 · 오류에만 쓴다).</summary>
+    internal static IBrush SlotLive => Skin.SlotLive.Brush();
 
-    /// <summary>이어진 칸의 초록 점.</summary>
-    internal static readonly IBrush SlotJoined = new SolidColorBrush(Color.FromRgb(0x1F, 0x9D, 0x55));
+    /// <summary>이어진 칸의 점 — 판에서는 그 칸의 길 색으로 칠한다(<see cref="LaneBrush"/>). 길 색을 모를 때만 이것(초록)이다.</summary>
+    internal static IBrush SlotJoined => Skin.Success.Brush();
 
     /// <summary>아직 못 쓰는 칸의 회색 테두리.</summary>
-    internal static readonly IBrush SlotAsleep = new SolidColorBrush(Color.FromArgb(120, 150, 150, 150));
+    internal static IBrush SlotAsleep => Skin.SlotAsleep.Brush();
 
     /// <summary>
-    /// 그 칸의 색 — <b>세 자리를 한눈에</b> 가른다 (2026-09-16 소유자).
+    /// 그 칸의 색 — <b>세 자리를 한눈에</b> 가른다 (2026-09-16 소유자). 색보다 <b>모양</b>이 먼저 말한다(2026-11-26 — 디자인 점검 2번):
     ///
-    /// | 텅 빈 회색 | 아직 꺼져 있다 — 눌러서 켠다 |
-    /// | 붉은색 | 켜졌다 — 끌어다 놓을 수 있다 |
-    /// | 초록색 | 이어졌다 |
+    /// | 속이 빈 회색 원 | 아직 꺼져 있다 — 눌러서 켠다 |
+    /// | 속이 찬 원(켜짐 색 — 「맑은 하늘」은 진한 회색 · 기본 테마는 붉은색) | 켜졌다 — 끌어다 놓을 수 있다 |
+    /// | 속이 찬 원(그 칸의 길 색) | 이어졌다 |
     /// </summary>
     private IBrush SlotDot(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots) =>
         !choice.IsEmpty ? SlotJoined : IsLive(choice, slots) ? SlotLive : SlotAsleep;
@@ -5760,25 +6344,109 @@ public partial class GraphEditorView : UserControl
     private bool JoinsAsAuto(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots, string label) =>
         choice.IsEmpty ? label.Length == 0 && IsAutoSlot(choice, slots) : choice.IsAuto;
 
+    /// <summary>선택지 칸의 문구가 접히는 폭 — 칸이 가로로 나란히 서므로 긴 문구 하나가 옆 칸을 멀리 밀어내지 않게 한다(적는 동안의 칸은 접지 않는다). 글자 크기에 비례한다.</summary>
+    private static double SlotLabelMaxWidth(double size) => size * 16;
+
+    /// <summary>
+    /// 선택지 칸의 글자 크기 — 그 카드의 글 칸 기본 크기를 따른다(가장 작게 <see cref="SlotFontMin"/>). 작가가 글을 쓰려고 카드의 글자를 키우면 선택지 문구도
+    /// 함께 커진다(2026-11-26 소유자 — 「에피소드 노드 안의 글자는 키웠는데, 선택지 문구의 크기는 작다보니 너무 작아서 확인이 불가능」 · ⛔ 그 전에는 늘 11).
+    /// 빈 칸 · 「문구를 적어 주세요」 · 문구를 적는 칸도 같은 크기다.
+    /// </summary>
+    private double SlotFontSize(string nodeId) =>
+        Math.Max(SlotFontMin, _session?.Project.FindDialogue(nodeId) is { } node ? CardSize(node) : ScriptFont.Size);
+
+    private const double SlotFontMin = 12;
+
+    /// <summary>빈 칸에서 열리는 문구 칸의 가장 좁은 폭 — 글자 크기를 따른다(가장 좁게 <see cref="SlotEditorMinWidth"/>).</summary>
+    private static double EmptySlotWidth(double size) => Math.Max(SlotEditorMinWidth, Math.Ceiling(size * 7));
+
     /// <summary>문구 입력칸의 가장 좁은 폭 — 빈 칸에도 적을 자리가 보이게.</summary>
     private const double SlotEditorMinWidth = 90;
 
-    /// <summary>빈 선택지 칸의 글 — 회색으로 선다. 시험이 이 글로 찾는다.</summary>
-    internal static string SlotPlaceholderText => Ui.Board_EmptyChoice;
+    /// <summary>빈 선택지 칸의 [+] 단추 글. 시험이 이 글로 찾는다.</summary>
+    internal const string SlotPlaceholderText = "+";
 
-    /// <summary>빈 선택지 칸(네모)의 Tag — 칸 줄 안에서 글자 대신 선 그 칸을 찾는다.</summary>
+    /// <summary>빈 선택지 칸([+] 단추)의 Tag — 칸 줄 안에서 글자 대신 선 그 칸을 찾는다.</summary>
     internal const string SlotPlaceholderTag = "slot-placeholder";
+
+    /// <summary>
+    /// 빈 칸의 <b>[+] 단추</b> — 점 옆의 작은 네모(2026-11-26 소유자). 누르면 그 칸의 문구 칸이 열린다(누름은 <see cref="SlotChip"/>이 단다).
+    /// 평소에는 옅은 회색이고, 포인터를 올리면 고름의 파랑 테두리 · 글이 된다(윈도우의 단추 문법). 단추(<see cref="Button"/>)가 아니라 테두리다 —
+    /// 단추는 누름을 제가 먹어(Handled) 칸을 여는 처리기가 듣지 못한다.
+    /// </summary>
+    private static Border AddSlotButton(double size)
+    {
+        double side = Math.Ceiling(size + 8);
+        var glyph = new TextBlock
+        {
+            Text = SlotPlaceholderText,
+            FontSize = size + 2,
+            FontWeight = FontWeight.SemiBold,
+            Foreground = SlotPlaceholderInk,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var button = new Border
+        {
+            Width = side,
+            Height = side,
+            BorderThickness = new Thickness(1),
+            BorderBrush = SlotPlaceholderBorder,
+            // 단추로 읽히게 작은 네모(모서리 4) — 옆의 점(동그라미)과 모양이 갈린다(2026-11-26 — 디자인 점검 5번 · ⛔ 테마의 칸 모서리를 받아 동그라미였다).
+            CornerRadius = new CornerRadius(Math.Min(4, side / 2)),
+            Background = Skin.SlotSurface.Brush(),
+            VerticalAlignment = VerticalAlignment.Center,
+            Cursor = new Cursor(StandardCursorType.Hand),
+            Tag = SlotPlaceholderTag,
+            Child = glyph,
+            [ToolTip.TipProperty] = Ui.Board_ClickToWriteChoiceText,
+            [Avalonia.Automation.AutomationProperties.NameProperty] = Ui.Board_EmptyChoice
+        };
+
+        button.PointerEntered += (_, _) =>
+        {
+            button.BorderBrush = Skin.Selection.Brush();
+            glyph.Foreground = Skin.Selection.Brush();
+        };
+        button.PointerExited += (_, _) =>
+        {
+            button.BorderBrush = SlotPlaceholderBorder;
+            glyph.Foreground = SlotPlaceholderInk;
+        };
+
+        return button;
+    }
 
     /// <summary>이어졌는데 문구가 없는 선택지 칸의 글(auto-to-choice A2) — 빨갛다.</summary>
     internal static string SlotNeedsLabelText => Ui.Board_WriteChoiceText;
 
+    /// <summary>
+    /// 선택지 칸의 글 — 테마가 알약 칸을 바라면(<see cref="Skin.SlotPill"/>) 바탕을 스스로 그리는 글(<see cref="PillTextBlock"/>)이고, 아니면 맨 글이다.
+    /// 어느 쪽이든 줄에는 글 하나가 선다(짜임이 같다 · themes).
+    /// </summary>
+    private static TextBlock NewSlotText(Action<TextBlock> fill)
+    {
+        TextBlock text = Skin.SlotPill > 0
+            ? new PillTextBlock
+            {
+                Fill = Skin.SlotSurface.Brush(),
+                Outline = SlotPlaceholderBorder,
+                Radius = Skin.SlotRadius,
+                Padding = new Thickness(8, 2)
+            }
+            : new TextBlock();
+
+        fill(text);
+        return text;
+    }
+
     /// <summary>이어졌는데 문구가 없는 선택지 칸의 표 — 시험의 손잡이다.</summary>
     internal const string SlotNeedsLabelTag = "slot-needs-label";
 
-    private static readonly IBrush SlotNeedsLabelInk = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+    private static IBrush SlotNeedsLabelInk => Skin.Danger.Brush();
 
-    private static readonly IBrush SlotPlaceholderInk = new SolidColorBrush(Color.FromRgb(0x9C, 0xA3, 0xAF));
-    private static readonly IBrush SlotPlaceholderBorder = new SolidColorBrush(Color.FromRgb(0xB8, 0xBC, 0xC4));
+    private static IBrush SlotPlaceholderInk => Skin.NeutralLight.Brush();
+    private static IBrush SlotPlaceholderBorder => Skin.SlotPlaceholderBorder.Brush();
 
     /// <summary>문구 입력칸의 여유 — 테두리 · 안쪽 여백 · 커서 자리.</summary>
     private const double SlotEditorSlack = 24;
@@ -5798,16 +6466,17 @@ public partial class GraphEditorView : UserControl
         // 폭을 정해 둔다 — 판은 칸 줄의 폭을 재서 레인이 나갈 자리를 정하는데(DrawRailBranch), 판에 붙기 전의 글자 칸은 틀이
         // 아직 없어 제 폭을 작게 잰다. 그러면 레인이 글자 칸 위를 지나간다. 지금 문구의 폭에 여유를 더한다(적는 동안 넘치면
         // 칸 안에서 밀린다).
-        var probe = new TextBlock { Text = LabelOf(choice), FontSize = 10 };
+        double size = SlotFontSize(nodeId);
+        var probe = new TextBlock { Text = LabelOf(choice), FontSize = size };
         probe.Measure(Size.Infinity);
 
         var box = new TextBox
         {
             Text = LabelOf(choice),
-            FontSize = 10,
+            FontSize = size,
             Padding = new Thickness(3, 0),
             MinHeight = 0,
-            Width = Math.Max(SlotEditorMinWidth, Math.Ceiling(probe.DesiredSize.Width) + SlotEditorSlack),
+            Width = Math.Max(EmptySlotWidth(size), Math.Ceiling(probe.DesiredSize.Width) + SlotEditorSlack),
             VerticalAlignment = VerticalAlignment.Center
         };
 
@@ -5841,6 +6510,18 @@ public partial class GraphEditorView : UserControl
             if (string.Equals(_editingSlot, SlotKey(choice), StringComparison.Ordinal))
             {
                 FinishSlotLater();
+            }
+        });
+
+        // 열리자마자 적을 수 있다 — 판에 붙으면 초점을 쥔다(2026-11-26 소유자 — 「빈선택지를 누르더라도 바로 텍스트 박스가 활성화 되는게 아니라 그
+        // 상태에서 다시 한 번 눌러야」). 지금 도는 누름 처리가 끝난 뒤로 미룬다 — 누른 자리(점 · [+])는 다시 그리며 판에서 떨어진다. 그 사이에 칸이
+        // 닫혔거나 다른 칸이 열렸으면 하지 않는다. ⛔ 그 전에는 초점을 주지 않아 칸을 한 번 더 눌러야 적을 수 있었다.
+        box.AttachedToVisualTree += (_, _) => Dispatcher.UIThread.Post(() =>
+        {
+            if (ReferenceEquals(SlotLabelBox, box) && !box.IsFocused)
+            {
+                box.Focus();
+                box.CaretIndex = box.Text?.Length ?? 0;
             }
         });
 
@@ -5906,17 +6587,22 @@ public partial class GraphEditorView : UserControl
         }
 
         IBrush stroke = ConnectionBrush(connection);
-        var path = new ShapePath
+        ShapePath path = Floored(new ShapePath
         {
             Stroke = stroke,
-            StrokeThickness = 2
-        };
+            StrokeThickness = 2 * Skin.LineWeight,
+            StrokeJoin = PenLineJoin.Round,
+
+            // 분기(들렀다 돌아오는 길)는 점선이다 — 선택지의 실선과 색이 아니라 모양으로 갈린다([구성]의 분기 선과 같다 · 2026-11-26 — 디자인 점검 2번).
+            // 점선의 마디는 선 굵기의 배수라 바닥으로 굵어지면 마디도 함께 커진다 — 화면에서 같은 무늬다.
+            StrokeDashArray = connection.Kind == GraphConnectionKind.ExecutionBranch ? new AvaloniaList<double> { 5, 3 } : null
+        });
 
         bool showLabel = connection.Kind == GraphConnectionKind.ExecutionBranch;
         var label = new Border
         {
             Padding = new Thickness(5, 1),
-            CornerRadius = new CornerRadius(3),
+            CornerRadius = new CornerRadius(Skin.ChipRadius),
             Background = showLabel ? stroke : Brushes.Transparent,
             IsVisible = showLabel,
             Child = new TextBlock
@@ -5924,7 +6610,7 @@ public partial class GraphEditorView : UserControl
                 Text = connection.Label,
                 FontSize = 9,
                 FontWeight = FontWeight.Bold,
-                Foreground = Brushes.White
+                Foreground = Skin.OnAccent.Brush()
             }
         };
 
@@ -5948,12 +6634,31 @@ public partial class GraphEditorView : UserControl
         path.PointerPressed += (_, args) => OnEdgePressed(args, path);
         label.PointerPressed += (_, args) => OnEdgePressed(args, label);
 
-        GraphCanvas.Children.Insert(0, path);
+        // 선은 챕터 · 장면 테두리와 철도 <b>위</b>, 카드 아래에 깐다 — 테두리 바로 뒤(철도 다음) 자리다. ⛔ 2026-11-26까지는 맨 앞(0)에 끼워 테두리
+        // <b>밑</b>에 깔렸다: 판을 새로 지으면 테두리를 먼저 깔고 선을 그 앞에 끼우므로, 테두리가 불투명한 면을 칠하는 테마(「맑은 하늘」의 장면 면)에서는
+        // 분기 선이 장면 면에 가려 이름표만 떴다 — 카드를 조금 움직여 테두리를 다시 깔아야(테두리가 다시 맨 앞으로 간다) 보였다(소유자 — 「분기 연결선의
+        // 경우 안 보이는 버그 … 약간 움직이면 그제서야 보입니다」).
+        GraphCanvas.Children.Insert(Math.Min(_frames.Count + _railVisuals.Count, GraphCanvas.Children.Count), path);
         GraphCanvas.Children.Add(label);
         _edges.Add(edge);
 
         PositionEdge(edge);
     }
+
+    /// <summary>
+    /// 테두리(챕터 · 장면)보다 아래에 깔린 선의 수 — 0이어야 한다(테두리 면에 가려 안 보인다 · <see cref="AddEdge"/>). 화면 시험의 손잡이다.
+    /// </summary>
+    internal int EdgesUnderFrames
+    {
+        get
+        {
+            int topFrame = _frames.Select(frame => GraphCanvas.Children.IndexOf(frame)).DefaultIfEmpty(-1).Max();
+            return _edges.Count(edge => GraphCanvas.Children.IndexOf(edge.Path) < topFrame);
+        }
+    }
+
+    /// <summary>판에 그은 선(분기 · 조건)의 수 — 화면 시험의 손잡이다.</summary>
+    internal int EdgeCount => _edges.Count;
 
     private void PositionEdge(EdgeVisual edge)
     {
@@ -6112,7 +6817,7 @@ public partial class GraphEditorView : UserControl
     private Ellipse BuildLineKnob(GraphOutputPortProjection port, NodeCard card, int index)
     {
         IBrush brush = BranchPalette.Accent(port.PaletteIndex);
-        var knob = new Ellipse
+        Ellipse knob = Marked(new Ellipse
         {
             Width = PortRadius * 2,
             Height = PortRadius * 2,
@@ -6122,7 +6827,7 @@ public partial class GraphEditorView : UserControl
             Cursor = new Cursor(StandardCursorType.Hand),
             ZIndex = 50,
             Tag = LineKnobTag + port.Key
-        };
+        }, PortRadius * 2);
         ToolTip.SetTip(knob, port.IsConnected
             ? Ui.Board_BranchVisitedBeforeThisLine
             : Ui.Board_UnconnectedBranchPointDropIt);
@@ -6167,7 +6872,8 @@ public partial class GraphEditorView : UserControl
             Point at = PortAnchor(card, index);
             Canvas.SetLeft(knob, at.X - PortRadius);
             Canvas.SetTop(knob, at.Y - PortRadius);
-            knob.Opacity = LineOpacity(card, index);
+            knob.Opacity = card.Stage == CardStage.Block ? 0 : LineOpacity(card, index);   // 덩어리 카드는 점을 걷는다(CardStages)
+            knob.IsHitTestVisible = card.Stage != CardStage.Block;
             knob.IsVisible = card.LineGroups[group].Count < 2 || card.ExpandedGroups.Contains(group);
         }
 
@@ -6179,7 +6885,8 @@ public partial class GraphEditorView : UserControl
 
             Canvas.SetLeft(hub.Dot, at.X - BranchHubRadius);
             Canvas.SetTop(hub.Dot, at.Y - BranchHubRadius);
-            hub.Dot.Opacity = LineOpacity(card, members[0]);
+            hub.Dot.Opacity = card.Stage == CardStage.Block ? 0 : LineOpacity(card, members[0]);
+            hub.Dot.IsHitTestVisible = card.Stage != CardStage.Block;
             hub.Dot.Background = expanded ? BranchHubOpenBrush : BranchHubBrush;
 
             hub.Fan.IsVisible = expanded;
@@ -6220,8 +6927,8 @@ public partial class GraphEditorView : UserControl
     private static double LineOpacity(NodeCard card, int portIndex) =>
         card.Ports[portIndex].ExecutionPort?.BranchOpenLineId is { } lineId && card.LineOutOfView.Contains(lineId) ? 0.45 : 1;
 
-    private static readonly IBrush BranchHubBrush = new SolidColorBrush(Color.FromRgb(0x33, 0x41, 0x55));
-    private static readonly IBrush BranchHubOpenBrush = new SolidColorBrush(Color.FromRgb(0x94, 0xA3, 0xB8));
+    private static IBrush BranchHubBrush => Skin.BranchHub.Brush();
+    private static IBrush BranchHubOpenBrush => Skin.BranchHubOpen.Brush();
 
     /// <summary>접은 공통 점이 지는 표 — <c>{접두}{노드}:{대사 LineId}</c>(왼쪽으로 나가는 무리면 끝에 <c>:left</c>).</summary>
     internal const string BranchHubTag = "detour-hub:";
@@ -6244,13 +6951,13 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private BranchHub BuildBranchHub(NodeCard card, string group, int count)
     {
-        var dot = new Border
+        Border dot = Marked(new Border
         {
             Width = BranchHubRadius * 2,
             Height = BranchHubRadius * 2,
             CornerRadius = new CornerRadius(BranchHubRadius),
             Background = BranchHubBrush,
-            BorderBrush = Brushes.White,
+            BorderBrush = Skin.Surface.Brush(),
             BorderThickness = new Thickness(1.5),
             Cursor = new Cursor(StandardCursorType.Hand),
             ZIndex = 51,
@@ -6260,14 +6967,14 @@ public partial class GraphEditorView : UserControl
                 Text = count.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 FontSize = 9,
                 FontWeight = FontWeight.Bold,
-                Foreground = Brushes.White,
+                Foreground = Skin.OnAccent.Brush(),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             }
-        };
+        }, BranchHubRadius * 2);
         ToolTip.SetTip(dot, Plural.Format(Ui.Board_BranchesClickToExpandOr, count));
 
-        var fan = new ShapePath
+        ShapePath fan = Floored(new ShapePath
         {
             Stroke = BranchHubOpenBrush,
             StrokeThickness = 1.5,
@@ -6275,7 +6982,7 @@ public partial class GraphEditorView : UserControl
             IsVisible = false,
             ZIndex = 49,
             Tag = BranchHubTag + card.NodeId + ":" + group + ":fan"
-        };
+        });
 
         dot.PointerPressed += (_, args) =>
         {
@@ -6379,6 +7086,226 @@ public partial class GraphEditorView : UserControl
         {
             PositionEdge(edge);
         }
+    }
+
+    // ── 카드 글 칸의 커서 줄 → 인스펙터 ─────────────────────────────────────
+
+    /// <summary>
+    /// 카드 글 칸에서 커서가 선 대본 줄이 바뀌었다 — (노드, 줄). 셸이 인스펙터의 고른 줄(파란 띠)을 그 줄로 옮긴다(2026-11-26 소유자 — 「그래프 뷰에서 특정
+    /// 줄을 수정하는데, 그것과 별개로 우측 인스펙터에서는 다른 줄을 파랗게 강조하니 되게 헷갈립니다 … 그래프 뷰의 텍스트 공간에서 입력하는 것과 동기화」 ·
+    /// <see cref="DialogueNodeEditor.FollowCaretLine"/>). 글 칸에 초점이 있는 동안만 알린다. 반대쪽(인스펙터에서 쓰는 줄 → 판)은 <see cref="ShowEditingLine"/>이다.
+    /// </summary>
+    internal event Action<string, string>? CaretLineChanged;
+
+    private (string NodeId, string LineId)? _caretLine;
+
+    /// <summary>마지막으로 알린 커서 줄 — 시험의 손잡이.</summary>
+    internal string? CaretLineId => _caretLine?.LineId;
+
+    private void NoteCaretLine(string nodeId, TextBox box)
+    {
+        if (!box.IsFocused ||
+            !ReferenceEquals(_writingBoxes.GetValueOrDefault(nodeId), box) ||
+            _writingLayouts.GetValueOrDefault(nodeId) is not { } layout ||
+            CaretLineOf(layout, box.Text ?? string.Empty, box.CaretIndex) is not { } lineId)
+        {
+            return;
+        }
+
+        if (_caretLine is { } was &&
+            string.Equals(was.NodeId, nodeId, StringComparison.Ordinal) &&
+            string.Equals(was.LineId, lineId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _caretLine = (nodeId, lineId);
+        CaretLineChanged?.Invoke(nodeId, lineId);
+    }
+
+    /// <summary>
+    /// 글 칸의 <paramref name="caret"/> 자리가 선 대본 줄 — 칸의 줄을 대본 줄에 잇는 셈은 작가용 글 서식과 같다(<see cref="ScenarioLineIdentity.RowLineIds"/> ·
+    /// 넣기 전의 글에서도 넣은 뒤와 같은 줄을 가리킨다). 빈 줄 · 조건 줄 · 아직 넣지 않은 새 줄이면 그 위의 가장 가까운 대본 줄이고, 위에 없으면 아래다.
+    /// 대본 줄이 하나도 없으면 null.
+    /// </summary>
+    internal static string? CaretLineOf(ScenarioWritingLayout layout, string text, int caret)
+    {
+        int row = text.AsSpan(0, Math.Clamp(caret, 0, text.Length)).Count('\n');
+        IReadOnlyList<string?> ids = ScenarioLineIdentity.RowLineIds(layout.Text, layout.RowOfLine, text);
+
+        if (row < ids.Count && ids[row] is { } here)
+        {
+            return here;
+        }
+
+        for (int up = Math.Min(row, ids.Count) - 1; up >= 0; up--)
+        {
+            if (ids[up] is { } above)
+            {
+                return above;
+            }
+        }
+
+        for (int down = row + 1; down < ids.Count; down++)
+        {
+            if (ids[down] is { } below)
+            {
+                return below;
+            }
+        }
+
+        return null;
+    }
+
+    // ── 인스펙터에서 쓰고 있는 줄 ────────────────────────────────────────────
+
+    private string? _editingNodeId;
+    private string? _editingLineId;
+
+    /// <summary>쓰고 있는 줄의 표시 — 시험이 찾는다.</summary>
+    internal const string EditingMarkerTag = "editing-line";
+
+    private const double EditingMarkerWidth = 13;   // 화살촉 7 + 틈 2 + 막대 4
+    private const double EditingMarkerGap = 4;      // 카드 테두리 바깥으로 띄운 거리
+
+    /// <summary>
+    /// 인스펙터에서 쓰고 있는 줄을 그 카드 왼쪽에 표시한다 — 카드 테두리 바깥에 화살촉과 막대가 그 대사의 높이(접힌 줄까지)에 선다. null이면 걷는다
+    /// (2026-11-26 소유자 — 「인스펙터에서 대사를 수정할 때, 대본탭의 그래프뷰 속의 노드 왼쪽으로 현재 수정 중인 줄을 화살표로든 혹은 파란색 막대로든
+    /// 표시」). 셸이 인스펙터의 알림(<see cref="DialogueNodeEditor.EditingLineChanged"/>)으로 부른다. 표시는 카드 안의 한 겹에 얹혀 카드와 함께 움직이고,
+    /// 글이 바뀌면 글 칸이 배치를 마칠 때 따라간다. 그 대사가 글 칸 밖으로 스크롤돼 있으면 칸의 위 · 아래 끝에 붙고 흐려진다.
+    /// </summary>
+    internal void ShowEditingLine(string? nodeId, string? lineId)
+    {
+        (_editingNodeId, _editingLineId) = lineId is null ? (null, null) : (nodeId, lineId);
+
+        foreach (NodeCard card in _cards)
+        {
+            PlaceEditingMarker(card);
+        }
+    }
+
+    private void PlaceEditingMarker(NodeCard card)
+    {
+        bool mine = _editingLineId is not null && string.Equals(card.NodeId, _editingNodeId, StringComparison.Ordinal);
+
+        if (!mine)
+        {
+            if (card.EditingMarker is { IsVisible: true } stale)
+            {
+                stale.IsVisible = false;
+            }
+
+            return;
+        }
+
+        if (card.Frame is not { } frame ||
+            card.WritingBox is not { } box ||
+            box.FindDescendantOfType<Avalonia.Controls.Presenters.TextPresenter>() is not { } presenter ||
+            box.Bounds.Height <= 0 ||
+            box.TranslatePoint(default, frame) is not { } boxTop)
+        {
+            return;
+        }
+
+        if (_writingLayouts.GetValueOrDefault(card.NodeId)?.RowOfLine is not { } rows || !rows.TryGetValue(_editingLineId!, out int row))
+        {
+            if (card.EditingMarker is { } gone)
+            {
+                gone.IsVisible = false;
+            }
+
+            return;
+        }
+
+        // 그 대사가 선 글의 줄 — 처음 글자의 위에서 마지막 글자의 아래까지(카드 안에서 접힌 화면 줄까지 든다).
+        string text = box.Text ?? string.Empty;
+        int start = 0;
+
+        for (int seen = 0; seen < row && start < text.Length; start++)
+        {
+            if (text[start] == '\n')
+            {
+                seen++;
+            }
+        }
+
+        int end = text.IndexOf('\n', Math.Min(start, text.Length));
+        end = end < 0 ? text.Length : end;
+
+        Rect first = presenter.TextLayout.HitTestTextPosition(Math.Min(start, text.Length));
+        Rect last = presenter.TextLayout.HitTestTextPosition(Math.Min(end, text.Length));
+
+        if (presenter.TranslatePoint(new Point(0, first.Y), frame) is not { } top ||
+            presenter.TranslatePoint(new Point(0, last.Bottom), frame) is not { } bottom)
+        {
+            return;
+        }
+
+        double low = boxTop.Y;
+        double high = boxTop.Y + box.Bounds.Height;
+        double y1 = Math.Clamp(top.Y, low, high);
+        double y2 = Math.Clamp(bottom.Y, low, high);
+        bool outOfView = Math.Abs(y1 - top.Y) > 0.5 || Math.Abs(y2 - bottom.Y) > 0.5;
+        double height = Math.Max(10, y2 - y1);
+        y1 = Math.Min(y1, high - height);
+
+        Control marker = card.EditingMarker ??= BuildEditingMarker();
+
+        if (!frame.Children.Contains(marker))
+        {
+            frame.Children.Add(marker);
+        }
+
+        var margin = new Thickness(-(CardPadding + card.Visual.BorderThickness.Left + EditingMarkerGap + EditingMarkerWidth), y1, 0, 0);
+
+        // 같은 값을 다시 넣지 않는다 — 배치가 끝날 때마다 불리므로, 바뀐 것이 없으면 배치를 다시 일으키지 않는다.
+        if (Math.Abs(marker.Margin.Left - margin.Left) > 0.25 || Math.Abs(marker.Margin.Top - margin.Top) > 0.25)
+        {
+            marker.Margin = margin;
+        }
+
+        if (Math.Abs(marker.Height - height) > 0.25)
+        {
+            marker.Height = height;
+        }
+
+        marker.Opacity = outOfView ? 0.45 : 1;
+        marker.IsVisible = true;
+    }
+
+    /// <summary>쓰고 있는 줄의 표시 — 카드 쪽을 가리키는 화살촉과 그 대사의 높이만큼의 막대(강조색).</summary>
+    private static Control BuildEditingMarker()
+    {
+        IBrush brush = Skin.Accent.Brush();
+
+        return new Panel
+        {
+            Width = EditingMarkerWidth,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Top,
+            IsHitTestVisible = false,
+            Tag = EditingMarkerTag,
+            Children =
+            {
+                new ShapePath
+                {
+                    Data = Geometry.Parse("M0,0 L7,5 L0,10 Z"),
+                    Fill = brush,
+                    Width = 7,
+                    Height = 10,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    VerticalAlignment = VerticalAlignment.Center
+                },
+                new Border
+                {
+                    Width = 4,
+                    CornerRadius = new CornerRadius(2),
+                    Background = brush,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Stretch
+                }
+            }
+        };
     }
 
     /// <summary>글의 <paramref name="row"/>번째 줄(0부터)이 선 화면 줄의 가운데 높이 — 글 칸 안 좌표.</summary>
@@ -6502,6 +7429,7 @@ public partial class GraphEditorView : UserControl
             Math.Max(0, (content.X * _zoom) - pivot.X),
             Math.Max(0, (content.Y * _zoom) - pivot.Y));
         RefreshMinimapViewport();
+        PlaceFrameLabels();
     }
 
     /// <summary>배율의 변환·표시만 — 오프셋은 호출자가 자기 규칙(고정점·중앙)으로 정한다.</summary>
@@ -6510,8 +7438,16 @@ public partial class GraphEditorView : UserControl
         _zoom = Math.Clamp(zoom, MinZoom, MaxZoom);
         ZoomHost.LayoutTransform = new ScaleTransform(_zoom, _zoom);
         ZoomText.Text = $"{Math.Round(_zoom * 100)}%";
+        ApplyZoomDrawing();   // 줄인 판은 덜 그린다(카드 단계 · 선 바닥 · 이름표) — 치수는 그대로라 아래 배치에 영향이 없다
         ZoomHost.UpdateLayout(); // 새 크기를 알아야 오프셋 상한이 맞는다
+        BoardBackdrop.Track(GraphScroll.Offset, _zoom);
     }
+
+    /// <summary>배율을 그 값으로 — 화면 가운데가 그 자리에 남는다. 시험이 줄인 판을 본다.</summary>
+    internal void ZoomTo(double zoom) => ApplyZoom(zoom, null);
+
+    /// <summary>지금 배율 — 화면 시험이 화면 바닥(<see cref="LineFloorPx"/>)으로 굵어진 선의 굵기를 셈할 때 쓴다.</summary>
+    internal double Zoom => _zoom;
 
     /// <summary>
     /// 특정 챕터(판)로 이동 — 그 판의 노드들이 여백을 두고 들어오는 배율과 위치.
@@ -6573,6 +7509,7 @@ public partial class GraphEditorView : UserControl
             Math.Max(0, (point.X * _zoom) - (GraphScroll.Viewport.Width / 2)),
             Math.Max(0, (point.Y * _zoom) - (GraphScroll.Viewport.Height / 2)));
         RefreshMinimapViewport();
+        PlaceFrameLabels();
     }
 
     /// <summary>F로 카드에 맞출 때의 배율 — 글 칸을 읽고 쓰기에 알맞은 크기.</summary>
@@ -6766,10 +7703,21 @@ public partial class GraphEditorView : UserControl
         }
     }
 
-    /// <summary>미니맵 전체 다시 그리기 — 카드·프록시를 축소 사각형으로, 위에 뷰포트 틀.</summary>
+    /// <summary>미니맵의 장면 자리 — 꼬리표 뒤는 「판 ID/장면ID」(검증이 집는다). 펼친 장면은 그 장면의 옅은 면, 접은 장면 상자는 그 장면의 점 색이다.</summary>
+    internal const string MinimapSceneTag = "minimap-scene:";
+
+    /// <summary>미니맵 전체 다시 그리기 — 장면 자리를 깔고, 카드·프록시를 축소 사각형으로, 위에 뷰포트 틀.</summary>
     private void RefreshMinimap()
     {
         MinimapCanvas.Children.Clear();
+
+        // 장면 자리를 그 장면의 옅은 면(판과 같은 비치는 색)으로 먼저 깐다 — 카드가 그 위에 서서 미니맵에서도 장면 덩어리가 보인다(design/scene-colors.md ⑤ ·
+        // 2026-11-27 소유자 — 「다음 단계 진행」). 겹친 장면은 판처럼 한 겹 더 진하다. ⛔ 그 전에는 카드만 그렸다.
+        foreach ((Rect Area, string FileId, string ChapterId, string SceneId, int Color) scene in _sceneAreas)
+        {
+            AddMinimapRect(scene.Area.X, scene.Area.Y, scene.Area.Width, scene.Area.Height, Skin.SceneTintOf(scene.Color).Brush())
+                .Tag = MinimapSceneTag + scene.FileId + "/" + scene.SceneId;
+        }
 
         foreach (NodeCard card in _cards)
         {
@@ -6778,37 +7726,43 @@ public partial class GraphEditorView : UserControl
                 Canvas.GetTop(card.Visual),
                 card.Visual.Width,
                 CardHeightOf(card),
-                card.Style.Accent); // 카드와 같은 시각 언어 — 미니맵에서도 에피소드·분기 카드가 갈린다.
+                card.Style.Accent.Brush(170)); // 카드와 같은 시각 언어 — 미니맵에서도 에피소드·분기 카드가 갈린다.
         }
 
         foreach (FileProxyVisual proxy in _proxies)
         {
-            AddMinimapRect(
+            // 접은 장면 상자는 그 장면의 점 색 덩어리다(판의 상자 테두리 · 점과 한 색). 판째 접힌 상자는 회색 그대로.
+            Rectangle box = AddMinimapRect(
                 Canvas.GetLeft(proxy.Visual),
                 Canvas.GetTop(proxy.Visual),
                 ProxyWidth,
                 ProxyHeaderHeight + (proxy.VisualRowCount * ProxyRowHeight),
-                Color.FromRgb(0x6B, 0x72, 0x80));
+                (proxy.SceneId is null ? Skin.Neutral : Skin.SceneMarkOf(proxy.SceneColor)).Brush(170));
+
+            if (proxy.SceneId is { } sceneId)
+            {
+                box.Tag = MinimapSceneTag + proxy.FileId + "/" + sceneId;
+            }
         }
 
         _minimapViewport = new Rectangle
         {
-            Stroke = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB)),
+            Stroke = Skin.Selection.Brush(),
             StrokeThickness = 1,
-            Fill = new SolidColorBrush(Color.FromArgb(20, 37, 99, 235)),
+            Fill = Skin.Selection.Brush(20),
             IsHitTestVisible = false
         };
         MinimapCanvas.Children.Add(_minimapViewport);
         RefreshMinimapViewport();
     }
 
-    private void AddMinimapRect(double x, double y, double width, double height, Color color)
+    private Rectangle AddMinimapRect(double x, double y, double width, double height, IBrush fill)
     {
         var rect = new Rectangle
         {
             Width = Math.Max(2, width * (MinimapWidth / CanvasWidth)),
             Height = Math.Max(2, height * (MinimapHeight / CanvasHeight)),
-            Fill = new SolidColorBrush(Color.FromArgb(170, color.R, color.G, color.B)),
+            Fill = fill,
             RadiusX = 1,
             RadiusY = 1,
             IsHitTestVisible = false
@@ -6816,6 +7770,7 @@ public partial class GraphEditorView : UserControl
         Canvas.SetLeft(rect, x * (MinimapWidth / CanvasWidth));
         Canvas.SetTop(rect, y * (MinimapHeight / CanvasHeight));
         MinimapCanvas.Children.Add(rect);
+        return rect;
     }
 
     /// <summary>뷰포트 틀만 옮긴다 — 스크롤·줌마다 불리므로 전체를 다시 그리지 않는다.</summary>
@@ -6881,9 +7836,53 @@ public partial class GraphEditorView : UserControl
     private void OnCardPressed(NodeCard card, PointerPressedEventArgs args)
     {
         ReleaseWritingFocus();
+
+        // Ctrl+누름 = 고른 것에 더하고, 이미 고른 카드면 뺀다(2026-11-27 소유자 — 「Ctrl+클릭으로 더하기 … 이미 선택된 것을 다시 Ctrl+클릭을 할 경우 그 경우에는
+        // 선택대상에서 빼지는 방식」 · ⛔ 같은 날 처음에는 Alt로 더하고 Shift로 뺐다). macOS의 ⌘도 같다. 끌기를 시작하지 않는다.
+        if (args.GetCurrentPoint(card.Visual).Properties.IsLeftButtonPressed &&
+            (args.KeyModifiers.HasFlag(KeyModifiers.Control) || args.KeyModifiers.HasFlag(KeyModifiers.Meta)))
+        {
+            args.Handled = true;
+            _headerBlankPress = null;
+            _pendingBasePin = null;
+
+            if (IsPicked(card.NodeId))
+            {
+                RemoveFromPicked(card.NodeId);
+            }
+            else
+            {
+                AddToPicked(card.NodeId);
+            }
+
+            return;
+        }
+
         _session?.Select(card.NodeId);
 
         PointerPointProperties pressed = args.GetCurrentPoint(card.Visual).Properties;
+
+        // 머리 빈 곳의 두 번 누름 — 기본 크기로 고정하고 풀기를 오간다(2026-11-25 소유자 — 「노드의 머리부분 중, 제목영역이 아닌 우측 빈 공간을 더블 클릭 했을
+        // 시에」). 글 칸이 있는 카드만이다. <b>같은 카드의 머리 빈 곳을 잇달아 두 번 눌렀다 떼야만</b> 오간다(2026-11-26 소유자 — 「더블클릭이 아니라, 그저
+        // 클릭 한번만 했는데도 좁아지거나 펴지는 경우가 있습니다」):
+        //   ① 운영체제의 두 번 누름 셈(ClickCount)은 <b>무엇을 눌렀든</b> 같은 자리 · 짧은 틈이면 2가 된다 — 카드를 한 번 눌러 고르고 곧바로 다시 눌러 끌려던 것,
+        //      맞춤 단추를 누른 뒤 줄어든 카드의 머리 빈 곳이 그 자리에 온 것도 2다. 그래서 첫 누름이 이 카드의 머리 빈 곳이었는지 직접 적어 둔다.
+        //   ② 두 번째 누름도 끌기로 시작하고, <b>놓을 때</b> 움직이지 않았으면 그때 오간다(CommitDrag) — 다시 눌러 끈 것은 끌기다.
+        //   ③ 셈은 짝수째가 두 번 누름이다(<see cref="Clicks"/>) — 세 번째 누름(ClickCount 3)은 한 번 누름이라 다시 오가지 않고(접혔다가 곧바로 펴지지 않는다),
+        //      쉬지 않고 누르면 네 번째에 다시 오간다(2026-11-27 소유자 — 「멈추지 않고 계속 클릭을 하면 그 뒤로는 더블클릭해도 아무런 반응이 없습니다」 · ⛔ 그 전에는
+        //      첫 누름을 「꼭 1」, 두 번째를 「꼭 2」로 세어 셋째부터는 셈이 다시 1로 돌아갈 때까지 아무 반응이 없었다).
+        // ⛔ 그 전에는 ClickCount가 2 이상이면 누르는 즉시 오갔다(끌기도 시작하지 않았다).
+        // 글을 보이지 않는 카드(글줄 · 덩어리 단계)는 머리 줄이 감춰져 있다 — 보이지 않는 단추 · 제목을 두 번 눌러 고치지 않는다(CardStages).
+        bool fullCard = card.Stage == CardStage.Text;
+        bool headerBlank = fullCard && pressed.IsLeftButtonPressed && card.WritingBox is not null && OnHeaderBlank(card, args);
+        (string NodeId, ulong At)? firstBlank = _headerBlankPress;
+        _headerBlankPress = headerBlank && Clicks.IsSingle(args.ClickCount) ? (card.NodeId, args.Timestamp) : null;
+        _pendingBasePin = headerBlank && Clicks.IsDouble(args) &&
+                          firstBlank is { } first &&
+                          string.Equals(first.NodeId, card.NodeId, StringComparison.Ordinal) &&
+                          args.Timestamp >= first.At && args.Timestamp - first.At <= DoublePressWindow
+            ? (card.NodeId, new Point(Canvas.GetLeft(card.Visual), Canvas.GetTop(card.Visual)))
+            : null;
 
         // 우클릭 — 카드 차림표(제목 고치기 · [구성] 탭에서 보기). 끌기를 시작하지 않는다(2026-11-25 소유자).
         if (pressed.IsRightButtonPressed)
@@ -6895,25 +7894,18 @@ public partial class GraphEditorView : UserControl
 
         // 두 번 누름 — 제목 글자 위면 그 자리에서 제목을 고친다(2026-11-25 소유자 · ⛔ 그 전에는 [구성] 탭으로 데려갔다 · 같은 날 머리 줄 전체에서 글자
         // 위로 줄였다). 끌기를 시작하지 않는다(첫 누름이 시작한 끌기는 놓을 때 끝났다). 글자 밖의 두 번 누름은 한 번 누름과 같다.
-        if (args.ClickCount >= 2 && pressed.IsLeftButtonPressed && OnTitleText(card, args))
+        if (fullCard && Clicks.IsDouble(args) && pressed.IsLeftButtonPressed && OnTitleText(card, args))
         {
             args.Handled = true;
             BeginCardRename(card.NodeId);
             return;
         }
 
-        // 두 번 누름 — 머리 줄에서 제목 글자 오른쪽의 빈 곳이면 기본 크기로 고정하고 풀기를 오간다(2026-11-25 소유자 — 「노드의 머리부분 중, 제목영역이 아닌 우측 빈
-        // 공간을 더블 클릭 했을 시에」). 글 칸이 있는 카드만이다.
-        if (args.ClickCount >= 2 && pressed.IsLeftButtonPressed && card.WritingBox is not null && OnHeaderBlank(card, args))
-        {
-            args.Handled = true;
-            UiGuard.Run(_session, Ui.Board_BasePin, () => ToggleBasePin(card.NodeId));
-            return;
-        }
-
-        // 범위 선택된 카드를 잡으면 무리가 함께 움직인다 (W40).
+        // 범위 선택된 카드를 잡으면 무리가 함께 움직인다 (W40). 끌지 않고 놓으면 그 카드 하나만 고른다 — 윈도우의 목록과 같다(2026-11-26 소유자 — 챕터 · 장면
+        // 이름표로 고른 무리에서 에피소드 하나를 누르면 다른 카드들의 고름 강조가 그대로 남던 결함 · CommitDrag).
         if (_multiSelected.Contains(card.NodeId) && _multiSelected.Count > 1)
         {
+            _groupPressedNodeId = card.NodeId;
             BeginGroupDrag(args.GetPosition(GraphCanvas));
             args.Handled = true;
             return;
@@ -6924,11 +7916,73 @@ public partial class GraphEditorView : UserControl
 
         _draggingCard = card;
         Point position = args.GetPosition(GraphCanvas);
+        _dragStart = new Point(Canvas.GetLeft(card.Visual), Canvas.GetTop(card.Visual));
         _dragOffset = new Point(
-            position.X - Canvas.GetLeft(card.Visual),
-            position.Y - Canvas.GetTop(card.Visual));
+            position.X - _dragStart.X,
+            position.Y - _dragStart.Y);
 
         args.Handled = true;
+    }
+
+    /// <summary>그 카드가 지금 고른 것인가 — 무리 안이거나, 무리 없이 고른 카드 하나다.</summary>
+    private bool IsPicked(string nodeId) =>
+        _multiSelected.Count > 1
+            ? _multiSelected.Contains(nodeId)
+            : string.Equals(_session?.SelectedNodeId, nodeId, StringComparison.Ordinal);
+
+    /// <summary>
+    /// <b>Ctrl+누름(고르지 않은 카드) — 그 카드를 고른 것에 더한다</b>(2026-11-27 소유자 — 「하나의 노드를 선택한 상태에서 … 다른 노드도 같이 선택」). 무리가
+    /// 없으면 지금 고른 카드와 함께 무리가 된다. 인스펙터는 마지막에 누른 카드다(범위로 고를 때 가장 가까운 카드를 보이는 것과 같다). 무리는 범위로 고른 것과
+    /// 같다 — 함께 끌고, 카드 머리의 단추가 모두에게 입는다.
+    /// </summary>
+    private void AddToPicked(string nodeId)
+    {
+        if (_multiSelected.Count == 0 &&
+            _session?.SelectedNodeId is { } current &&
+            !string.Equals(current, nodeId, StringComparison.Ordinal) &&
+            _cards.Any(card => string.Equals(card.NodeId, current, StringComparison.Ordinal)))
+        {
+            _multiSelected.Add(current);
+        }
+
+        if (_multiSelected.Count > 0)
+        {
+            _multiSelected.Add(nodeId);
+        }
+
+        _session?.Select(nodeId);
+        HighlightSelection();
+    }
+
+    /// <summary>
+    /// <b>Ctrl+누름(이미 고른 카드) — 그 카드를 고른 것에서 뺀다</b>(2026-11-27 소유자 — 「선택한 노드 중 원하는 노드만을 선택 해제」). 인스펙터가 보이던 카드를
+    /// 뺐으면 남은 것 가운데 마지막 카드로 옮기고, 하나만 남으면 무리를 풀고 그 카드 하나를 고른 것이 된다. 무리 없이 고른 카드 하나를 빼면 아무것도 안 고른
+    /// 것이 된다.
+    /// </summary>
+    private void RemoveFromPicked(string nodeId)
+    {
+        if (_multiSelected.Count > 1 && _multiSelected.Remove(nodeId))
+        {
+            List<string> left = _cards.Select(card => card.NodeId).Where(_multiSelected.Contains).ToList();
+
+            if (left.Count <= 1)
+            {
+                _multiSelected.Clear();
+            }
+
+            if (left.Count > 0 &&
+                (left.Count == 1 || string.Equals(_session?.SelectedNodeId, nodeId, StringComparison.Ordinal)))
+            {
+                _session?.Select(left[^1]);
+            }
+        }
+        else if (_multiSelected.Count <= 1 && string.Equals(_session?.SelectedNodeId, nodeId, StringComparison.Ordinal))
+        {
+            _multiSelected.Clear();
+            _session?.Select(null);
+        }
+
+        HighlightSelection();
     }
 
     /// <summary>무리(<see cref="_multiSelected"/>)를 함께 끌기 시작한다 — 움직임은 판이 받고(<see cref="OnCanvasPointerMoved"/>) 놓을 때 한 번 적는다.</summary>
@@ -6954,6 +8008,90 @@ public partial class GraphEditorView : UserControl
     /// 포함된 에피소드나, 그 장면 내에 포함된 모든 에피소드가 클릭되도록 해서 이동시키는 용도」). 한 번 = 그 안의 카드를 모두 무리로 고르고(인스펙터 ·
     /// 하이어아키는 그 챕터 · 장면 — 판의 빈 곳을 누른 것과 같다) 그대로 끌면 함께 움직인다. 두 번 = 접기.
     /// </summary>
+    /// <summary>
+    /// 접힌 상자의 이름표를 눌렀다(2026-11-27) — 펼친 이름표의 짝이다: 한 번 = 그 챕터 · 장면을 고르고(인스펙터 · 하이어아키) 그대로 끌면 상자째 옮긴다(상자를
+    /// 눌러 끄는 것과 같다), 두 번 = 펴기.
+    /// </summary>
+    private void OnFoldedLabelPressed(PointerPressedEventArgs args, HierarchyPick pick, FileProxyVisual proxy, Action unfold)
+    {
+        args.Handled = true;
+
+        if (!args.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        // 짝수째 누름만 두 번 누름이다(<see cref="Clicks"/>) — 접은 바로 뒤 셋째 누름이 다시 펴지 않는다.
+        if (Clicks.IsDouble(args))
+        {
+            CancelDrag(); // 첫 누름이 시작한 끌기 상태를 걷는다
+            unfold();
+            return;
+        }
+
+        ReleaseWritingFocus();
+        SelectEdge(null);
+        AreaPicked?.Invoke(pick);
+
+        if (_session?.Project.FindFile(proxy.FileId) is { Nodes.Count: > 0 } storyFile)
+        {
+            var inside = proxy.Rows.Select(row => row.NodeId).ToHashSet(StringComparer.Ordinal);
+            BeginProxyDrag(
+                proxy.Visual, args, proxy.FileId, proxy.SceneId,
+                proxy.SceneId is null ? storyFile.Nodes : storyFile.Nodes.Where(node => inside.Contains(node.Id)));
+            args.Pointer.Capture(GraphCanvas);   // 이름표는 판 밖의 화면 겹에 있다 — 끄는 움직임 · 놓음은 판이 받는다
+        }
+    }
+
+    /// <summary>
+    /// 챕터 이름표 — 먹색 면에 흰 글(다른 챕터는 흐린 회색). 펼친 챕터의 테두리와 접힌 판의 표가 같은 것을 단다(끝의 표만 「⌄」 · 「›」).
+    /// </summary>
+    private static Border ChapterLabel(string boardName, string chapterName, bool isActive, bool folded) => new()
+    {
+        CornerRadius = new CornerRadius(Skin.LabelRadius),
+        Padding = new Thickness(8 + (8 * Skin.FrameLabelGrow), 3 + (4 * Skin.FrameLabelGrow)),   // 끌어 옮기는 손잡이다 — 넉넉하게(2026-11-26 소유자)
+        Background = (isActive ? Skin.ChapterLabel : Skin.ChapterLabelIdle).Brush(),
+        BoxShadow = Skin.FrameLabelShadow,
+        Cursor = new Cursor(StandardCursorType.Hand),
+        Tag = ChapterLabelTag + boardName,
+        Child = new TextBlock
+        {
+            Text = string.Format(folded ? Ui.Board_ChapterFolded : Ui.Board_Chapter, chapterName),
+            Classes = { "frame-title" },   // 테마가 이름표의 글꼴을 고르는 손잡이(Themes/*/Controls.axaml)
+            TextTrimming = TextTrimming.CharacterEllipsis,   // 챕터의 폭에서 말줄임한다(PlaceFrameLabels)
+            FontSize = Skin.ChapterLabelFont,
+            FontWeight = FontWeight.SemiBold,
+            Foreground = Skin.ChapterLabelInk.Brush()
+        }
+    };
+
+    /// <summary>
+    /// 접힌 판(챕터)의 표에 다는 챕터 이름표(2026-11-27 소유자 — 「당신이 권하는 방향대로」) — 펼쳤을 때와 같은 모양 · 같은 크기 규칙(화면 13px 아래로 안 준다)으로
+    /// 표의 위 바깥에 선다. 표의 폭으로 말줄임하지 않는다 — 줄인 판에서 표는 좁아도 이름은 다 읽혀야 한다. 한 번 누르면 그 챕터를 골라 그대로 끌면 표째 옮기고,
+    /// 두 번 누르면 편다. ⛔ 그 전에는 표 머리의 작은 굵은 글뿐이라 접으면 챕터 이름이 사라진 것처럼 보였다.
+    /// </summary>
+    private Border? FoldedChapterLabel(FileProxyVisual proxy)
+    {
+        if (_session?.Project.Files.FirstOrDefault(file => string.Equals(file.Id, proxy.FileId, StringComparison.Ordinal)) is not { } board)
+        {
+            return null;
+        }
+
+        string name = _session.Editor.FindChapter(board.Name)?.ShownName ?? board.Name;
+        bool isActive = string.Equals(proxy.FileId, _session.ActiveFileId, StringComparison.Ordinal);
+        Border label = ChapterLabel(board.Name, name, isActive, folded: true);
+        ToolTip.SetTip(label, Ui.Board_FoldedChapterLabelTip);
+
+        string fileId = proxy.FileId;
+        label.PointerPressed += (_, args) => OnFoldedLabelPressed(
+            args,
+            new HierarchyPick(HierarchyKind.Chapter, board.Name),
+            proxy,
+            () => _session?.SetFileExpanded(fileId, expanded: true));
+
+        return label;
+    }
+
     private void OnFrameLabelPressed(PointerPressedEventArgs args, IReadOnlyList<string> members, HierarchyPick pick, Action fold)
     {
         args.Handled = true;
@@ -6963,7 +8101,9 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        if (args.ClickCount >= 2)
+        // 짝수째 누름만 두 번 누름이다(<see cref="Clicks"/> — 2026-11-27 소유자 — 「한번 더블클릭을 해서 상태를 바꾼 다음에는, 특정 시간 내에 한번만 클릭해도
+        // 바로 더블클릭을 한 듯 상태가 바뀝니다」). ⛔ 그 전에는 2 이상이라 접은 뒤 같은 자리의 이름표를 한 번 더 누르면(셋째) 곧바로 다시 펴졌다.
+        if (Clicks.IsDouble(args))
         {
             fold();
             return;
@@ -6975,7 +8115,9 @@ public partial class GraphEditorView : UserControl
 
         _multiSelected.Clear();
         _multiSelected.UnionWith(members);
+        _groupPressedNodeId = null;
         BeginGroupDrag(args.GetPosition(GraphCanvas));
+        args.Pointer.Capture(GraphCanvas);   // 이름표는 판 밖의 화면 겹에 있다 — 끄는 움직임 · 놓음은 판이 받는다
     }
 
     private void OnPortPressed(
@@ -6987,14 +8129,16 @@ public partial class GraphEditorView : UserControl
         _connectingFrom = port;
 
         Point start = PortAnchor(card, index);
-        _connectingLine = new Line
-        {
-            StartPoint = start,
-            EndPoint = start,
-            Stroke = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB)),
-            StrokeThickness = 2,
-            StrokeDashArray = new AvaloniaList<double> { 4, 3 }
-        };
+        _connectingLine = Floored(
+            new Line
+            {
+                StartPoint = start,
+                EndPoint = start,
+                Stroke = Skin.Selection.Brush(),
+                StrokeThickness = 2,
+                StrokeDashArray = new AvaloniaList<double> { 4, 3 }
+            },
+            PickedLineFloorPx);
 
         GraphCanvas.Children.Add(_connectingLine);
         // 공급 포트 안내는 2026-08-22에 사라졌다 — 끌 수 있는 포트가 실행 출구뿐이다.
@@ -7036,7 +8180,7 @@ public partial class GraphEditorView : UserControl
             }
 
             _rubberStart = args.GetPosition(GraphCanvas);
-            _rubberBand = RubberBand.Create(_rubberStart);
+            _rubberBand = Floored(RubberBand.Create(_rubberStart));
             GraphCanvas.Children.Add(_rubberBand);
             args.Pointer.Capture(GraphCanvas);
         }
@@ -7481,12 +8625,12 @@ public partial class GraphEditorView : UserControl
     /// <summary>그 자리를 품은 장면 테두리. 장면 테두리는 서로 겹치지 않게 서지만, 겹쳤다면 작은 쪽이 먼저다.</summary>
     private (string FileId, string ChapterId, string SceneId)? SceneAt(Point point)
     {
-        foreach ((Rect area, string fileId, string chapterId, string sceneId) in
+        foreach ((Rect Area, string FileId, string ChapterId, string SceneId, int Color) scene in
                  _sceneAreas.OrderBy(item => item.Area.Width * item.Area.Height))
         {
-            if (area.Contains(point))
+            if (scene.Area.Contains(point))
             {
-                return (fileId, chapterId, sceneId);
+                return (scene.FileId, scene.ChapterId, scene.SceneId);
             }
         }
 
@@ -7547,7 +8691,8 @@ public partial class GraphEditorView : UserControl
     {
         foreach (EdgeVisual item in _edges)
         {
-            item.Path.StrokeThickness = ReferenceEquals(item, _selectedEdge) ? 4 : 2;
+            bool picked = ReferenceEquals(item, _selectedEdge);
+            SetLineWidth(item.Path, (2 * Skin.LineWeight) + (picked ? 2 : 0), picked ? PickedLineFloorPx : LineFloorPx);   // 기본 테마: 고른 선 4 · 그 밖 2
         }
     }
 
@@ -7627,14 +8772,11 @@ public partial class GraphEditorView : UserControl
 
         if (_draggingGroup)
         {
-            double deltaX = position.X - _groupDragStart.X;
-            double deltaY = position.Y - _groupDragStart.Y;
+            Vector move = ClampDragMove(_groupStartPositions.Values, position.X - _groupDragStart.X, position.Y - _groupDragStart.Y);
 
             foreach ((string nodeId, Point start) in _groupStartPositions)
             {
-                _dragPositions[nodeId] = new Point(
-                    ClampNodeX(start.X + deltaX),
-                    ClampNodeY(start.Y + deltaY));
+                _dragPositions[nodeId] = new Point(start.X + move.X, start.Y + move.Y);
             }
 
             PreviewDrag();
@@ -7643,17 +8785,14 @@ public partial class GraphEditorView : UserControl
 
         if (_draggingProxyFileId is not null)
         {
-            double deltaX = position.X - _proxyDragStart.X;
-            double deltaY = position.Y - _proxyDragStart.Y;
+            Vector move = ClampDragMove(_proxyStartPositions.Values, position.X - _proxyDragStart.X, position.Y - _proxyDragStart.Y);
 
             foreach ((string nodeId, Point start) in _proxyStartPositions)
             {
-                _dragPositions[nodeId] = new Point(
-                    ClampNodeX(start.X + deltaX),
-                    ClampNodeY(start.Y + deltaY));
+                _dragPositions[nodeId] = new Point(start.X + move.X, start.Y + move.Y);
             }
 
-            _proxyDragDelta = new Vector(deltaX, deltaY);
+            _proxyDragDelta = move;
             PreviewDrag();
             return;
         }
@@ -7663,16 +8802,43 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        _dragPositions[_draggingCard.NodeId] = new Point(
-            ClampNodeX(position.X - _dragOffset.X),
-            ClampNodeY(position.Y - _dragOffset.Y));
+        Vector single = ClampDragMove([_dragStart], position.X - _dragOffset.X - _dragStart.X, position.Y - _dragOffset.Y - _dragStart.Y);
+        _dragPositions[_draggingCard.NodeId] = new Point(_dragStart.X + single.X, _dragStart.Y + single.Y);
         PreviewDrag();
     }
 
-    // 판 경계 클램프 (GB-4) — 카드가 스크롤이 닿지 않는 바깥으로 끌려 나가지 않는다.
-    private double ClampNodeX(double x) => Math.Clamp(x, 0, CanvasWidth - CardWidth);
+    // 판 경계 클램프 (GB-4) — 카드가 스크롤이 닿지 않는 바깥으로 끌려 나가지 않는다. 위 · 왼쪽 끝은 판의 0이 아니라 챕터 종이와 그 이름표가 판 안에 다
+    // 서는 자리다(BoardTopFloor · BoardLeftFloor — 2026-11-26 소유자: 「화면 바깥으로는 안 끌리게」).
+    private double ClampNodeX(double x) => Math.Clamp(x, Math.Min(BoardLeftFloor, CanvasWidth - CardWidth), CanvasWidth - CardWidth);
 
-    private double ClampNodeY(double y) => Math.Clamp(y, 0, CanvasHeight - BoardSize.CardHeight);
+    private double ClampNodeY(double y) => Math.Clamp(y, Math.Min(BoardTopFloor, CanvasHeight - BoardSize.CardHeight), CanvasHeight - BoardSize.CardHeight);
+
+    /// <summary>
+    /// 끄는 카드(들)의 옮김을 판 안으로 — <b>묶음째</b> 멈춘다. 카드마다 따로 막으면 가장자리에서 무리가 찌그러진다(⛔ 2026-11-26까지 그랬다).
+    /// 위 · 왼쪽 끝은 <see cref="BoardTopFloor"/> · <see cref="BoardLeftFloor"/>다 — 챕터를 끌어 그 이름표가 판 맨 위 밖으로 나가게 할 수 없다. 이미 그 끝을
+    /// 넘어 있는 카드(옛 파일 · 줄인 판에서 끝이 바뀐 것)는 끌기를 시작해도 끝으로 끌려 내려가지 않는다 — 더 바깥으로만 못 간다.
+    /// </summary>
+    private Vector ClampDragMove(IEnumerable<Point> starts, double moveX, double moveY)
+    {
+        double left = BoardLeftFloor;
+        double top = BoardTopFloor;
+        double right = CanvasWidth - CardWidth;
+        double bottom = CanvasHeight - BoardSize.CardHeight;
+        double minX = double.NegativeInfinity, maxX = double.PositiveInfinity;
+        double minY = double.NegativeInfinity, maxY = double.PositiveInfinity;
+
+        foreach (Point start in starts)
+        {
+            minX = Math.Max(minX, Math.Min(left - start.X, 0));
+            maxX = Math.Min(maxX, Math.Max(right - start.X, 0));
+            minY = Math.Max(minY, Math.Min(top - start.Y, 0));
+            maxY = Math.Min(maxY, Math.Max(bottom - start.Y, 0));
+        }
+
+        return new Vector(
+            double.IsFinite(minX) ? Math.Clamp(moveX, minX, maxX) : moveX,
+            double.IsFinite(minY) ? Math.Clamp(moveY, minY, maxY) : moveY);
+    }
 
     private void OnCanvasPointerReleased(object? sender, PointerReleasedEventArgs args)
     {
@@ -8063,14 +9229,14 @@ public partial class GraphEditorView : UserControl
 
         PositionEdge(edge);
 
-        string sourceName = FindNodeName(edge.Connection.SourceNodeId) ?? edge.Connection.SourceNodeId;
-        string targetName = FindNodeName(edge.Connection.TargetNodeId) ?? edge.Connection.TargetNodeId;
-        SetHint(string.Format(Ui.Board_ConditionRightClickToDelete, sourceName, edge.Connection.Label, targetName));
+        // 고른 선의 정체를 아래 띠에 적지 않는다(2026-11-26 소유자 — 「선택지를 연결 할 때마다 이상한 문구가 생기는데 … 필요없어보입니다」).
+        // 무엇을 골랐는지는 판의 칠과 인스펙터가 말한다.
     }
 
     /// <summary>
     /// 아래 띠에 한 줄 — <b>지금 벌어지는 일만</b> 말한다 (2026-08-24 소유자: "포트를 끌어
-    /// 놓으면 연결, 빈곳좌클릭 드래그 범위선택 이런 설명문구도 제거").
+    /// 놓으면 연결, 빈곳좌클릭 드래그 범위선택 이런 설명문구도 제거"). 지금 말하는 것은 <b>선을 끄는 동안</b>
+    /// 놓으면 무엇이 되는지뿐이다 — 고른 선의 정체(「A → B · 「문구」」)는 2026-11-26에 걷혔다(소유자 — 필요 없다).
     ///
     /// 늘 서 있던 조작법 설명은 폐지됐다. 손이 이미 아는 것을 매번 다시 일러 주면, 정작
     /// 무언가를 말해야 할 때 그 줄이 눈에 안 띈다 — 검증 보고에서 동기화 문구를 지운 것과
@@ -8295,8 +9461,8 @@ public partial class GraphEditorView : UserControl
                 DeleteConfirmButton = ConfirmFlyout.Show(
                     DeleteButton,
                     _session,
-                    string.Format(Ui.Board_IsEpisodeInChapterIts, episodeId, chapter.ChapterId),
-                    Ui.Board_DeleteEpisode2,
+                    string.Format(Ui.Confirm_DeleteEpisode, EpisodeTitle(chapter.ChapterId, episodeId)),
+                    Ui.Board_Delete,
                     () => DeleteEpisodeOfCard(chapter.ChapterId, episodeId),
                     closed: () => DeleteConfirmButton = null);
                 return;
@@ -8390,30 +9556,6 @@ public partial class GraphEditorView : UserControl
         new(Canvas.GetLeft(proxy.Visual), Canvas.GetTop(proxy.Visual),
             ProxyWidth, ProxyHeaderHeight + (proxy.VisualRowCount * ProxyRowHeight));
 
-    private string? FindNodeName(string nodeId)
-    {
-        ExpandedNodeProjection? expanded = _projection?.Items
-            .OfType<ExpandedNodeProjection>()
-            .FirstOrDefault(item => string.Equals(item.NodeId, nodeId, StringComparison.Ordinal));
-
-        if (expanded is not null)
-        {
-            return ShownName(nodeId, expanded.NodeName);
-        }
-
-        return _projection?.Items
-            .SelectMany(item => item switch
-            {
-                CollapsedFileProjection file => file.Nodes,
-                CollapsedSceneProjection scene => scene.Nodes,
-                _ => []
-            })
-            .FirstOrDefault(item => string.Equals(item.NodeId, nodeId, StringComparison.Ordinal))
-            ?.NodeName is { } name
-            ? ShownName(nodeId, name)
-            : null;
-    }
-
     /// <summary>카드가 [대본] 판에 보이는 이름 — 에피소드면 제목(비면 EpisodeId), 아니면 노드 이름(<see cref="EpisodeNaming.ShownNameOf"/>).</summary>
     private string ShownName(string nodeId, string fallback) =>
         _session?.Project.FindNode(nodeId) is { } found ? EpisodeNaming.ShownNameOf(_session.Project, found) : fallback;
@@ -8438,7 +9580,7 @@ public partial class GraphEditorView : UserControl
         return connection.Kind switch
         {
             GraphConnectionKind.ExecutionBranch => BranchPalette.Accent(connection.PaletteIndex),
-            _ => new SolidColorBrush(Color.FromArgb(150, 100, 100, 100))
+            _ => Skin.Connection.Brush()
         };
     }
 
@@ -8542,24 +9684,49 @@ public partial class GraphEditorView : UserControl
 
         /// <summary>머리 줄 — 분기 조건 표가 여기 선다(조건이 바뀌면 제자리에서 바꿔 단다 · <see cref="RefreshBranchConditions"/>).</summary>
         public Grid TitleRow { get; init; } = null!;
+
+        /// <summary>머리 띠 — 테마가 띠의 색을 줄 때만 있다(고르면 색이 바뀐다 · themes).</summary>
+        public Border? Band { get; init; }
+
+        /// <summary>고른 카드 위의 리본 — 테마가 색을 줄 때만 있다(themes).</summary>
+        public ShapePath? Ribbon { get; init; }
+
+        /// <summary>카드 안의 한 겹 — 내용과 손잡이 · 리본 · 쓰는 줄 표시가 얹힌다.</summary>
+        public Panel? Frame { get; init; }
+
+        /// <summary>인스펙터에서 쓰고 있는 줄의 표시(카드 왼쪽 바깥의 화살촉 + 막대) — 처음 필요할 때 짓는다(<see cref="PlaceEditingMarker"/>).</summary>
+        public Control? EditingMarker { get; set; }
+
+        /// <summary>그 카드의 단계 — 글 · 글줄 · 덩어리(<see cref="CardStage"/> · 카드의 화면 글자 크기로 정한다).</summary>
+        public CardStage Stage { get; set; }
+
+        /// <summary>글을 보이지 않는 단계의 겹(<see cref="CardOverview"/>) — 처음 그 단계에 들 때 짓는다.</summary>
+        public CardOverview? Overview { get; set; }
+
+        /// <summary>글줄 막대를 다시 지어야 한다 — 글 · 칸의 크기가 바뀌었다(글 칸이 배치를 마치면 짓는다).</summary>
+        public bool BarsDirty { get; set; }
     }
 
     private sealed class FileProxyVisual
     {
         public FileProxyVisual(
-            string fileId, Border visual, IReadOnlyList<ProxyNodeRow> rows, int visualRowCount, string? sceneId = null)
+            string fileId, Border visual, IReadOnlyList<ProxyNodeRow> rows, int visualRowCount, string? sceneId = null, int sceneColor = 0)
         {
             FileId = fileId;
             Visual = visual;
             Rows = rows;
             VisualRowCount = visualRowCount;
             SceneId = sceneId;
+            SceneColor = sceneColor;
         }
 
         public string FileId { get; }
 
         /// <summary>펼친 판 안의 접은 장면 상자면 그 장면 — 판째 접힌 상자면 null이다 (2026-10-30).</summary>
         public string? SceneId { get; }
+
+        /// <summary>접은 장면 상자의 장면 색(팔레트 칸 1 ~) — 판째 접힌 상자면 0이다. 미니맵이 상자를 이 색으로 그린다.</summary>
+        public int SceneColor { get; }
         public Border Visual { get; }
         public IReadOnlyList<ProxyNodeRow> Rows { get; }
 
@@ -8581,7 +9748,7 @@ public partial class GraphEditorView : UserControl
     // 굽고, 도구줄로 직각 · 곡선 · 직선을 고르거나 자동으로 되돌린다. 끄는 동안은 화면만 바뀌고 놓을 때 한 번 적는다
     // (되돌리기 한 칸 — 카드 끌기와 같다).
 
-    private static readonly IBrush SelectedLineBrush = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB));
+    private static IBrush SelectedLineBrush => Skin.Selection.Brush();
 
     /// <summary>고른 선택지 레인 — 챕터 간선의 신원(출발, 도착, 문구)이다.</summary>
     private sealed record RailKey(string ChapterId, string From, string To, string? Label);
@@ -8607,32 +9774,44 @@ public partial class GraphEditorView : UserControl
     /// <summary>끄는 동안의 모양 — 놓을 때까지 프로젝트에 적지 않는다.</summary>
     private EdgeShape? _shapePreview;
 
-    /// <summary>선택지 레인 하나 — 칩 끝에서 레인을 타고 도착 접점까지(<see cref="EdgeShapeRouter.Lane"/>).</summary>
+    /// <summary>접은 장면 상자의 줄에서 나가는(또는 그 줄로 드는) 레인 하나 — 옆으로 나가 레인을 타고 도착 접점까지(<see cref="EdgeShapeRouter.Lane"/>).</summary>
     private void DrawLane(
-        RailKey key, EdgeShape? stored, GraphPosition from, double toward, double laneX, GraphPosition junction)
+        RailKey key, EdgeShape? stored, GraphPosition from, double toward, double laneX, GraphPosition junction) =>
+        DrawLane(key, stored, (shape, preview) => EdgeShapeRouter.Lane(from, toward, laneX, junction, preview ?? shape));
+
+    /// <summary>
+    /// 선택지의 길 하나 — 보이는 선 · 누르는 자리 · (골랐으면) 손잡이. 길을 어떻게 긋는지는 부르는 쪽이 준다(<paramref name="route"/> — 적힌 모양과, 손잡이를
+    /// 끄는 동안의 모양을 받아 선을 낸다): 카드의 선택지 칸에서는 아래로 나가고(<see cref="EdgeShapeRouter.Drop"/>), 접은 장면 상자의 줄에서는 옆으로 나간다.
+    /// </summary>
+    /// <param name="stroke">길의 색 — 없으면 <see cref="RailBrush"/>. 고른 길은 늘 고른 색이다.</param>
+    private void DrawLane(RailKey key, EdgeShape? stored, Func<EdgeShape?, EdgeShape?, ShapedEdge> route, IBrush? stroke = null)
     {
         bool selected = key.Equals(_selectedRail);
-        ShapedEdge lane = EdgeShapeRouter.Lane(
-            from, toward, laneX, junction, selected && _shapePreview is { } preview ? preview : stored);
+        ShapedEdge lane = route(stored, selected ? _shapePreview : null);
 
-        _railVisuals.Add(new ShapePath
-        {
-            Data = ShapedGeometry(lane),
-            Stroke = selected ? SelectedLineBrush : RailBrush,
-            StrokeThickness = selected ? 2.4 : 1.4,
-            IsHitTestVisible = false,
-            Tag = $"레인:{key.From}>{key.To}"
-        });
+        _railVisuals.Add(Floored(
+            new ShapePath
+            {
+                Data = ShapedGeometry(lane),
+                Stroke = selected ? SelectedLineBrush : stroke ?? RailBrush,
+                StrokeThickness = (selected ? 2.4 : 1.4) * Skin.LineWeight,
+                StrokeJoin = PenLineJoin.Round,
+                IsHitTestVisible = false,
+                Tag = $"레인:{key.From}>{key.To}"
+            },
+            selected ? PickedLineFloorPx : LineFloorPx));
 
         // 누르는 자리 — 1.4px 선은 겨누기 어렵다. 넓고 투명한 같은 선이 받는다(카드 뒤라 카드를 가리지 않는다).
-        var hit = new ShapePath
-        {
-            Data = ShapedGeometry(lane),
-            Stroke = Brushes.Transparent,
-            StrokeThickness = 10,
-            Cursor = new Cursor(StandardCursorType.Hand),
-            Tag = key
-        };
+        ShapePath hit = Floored(
+            new ShapePath
+            {
+                Data = ShapedGeometry(lane),
+                Stroke = Brushes.Transparent,
+                StrokeThickness = 10,
+                Cursor = new Cursor(StandardCursorType.Hand),
+                Tag = key
+            },
+            HitLineFloorPx);   // 줄인 판에서도 선을 겨눌 수 있다
         hit.PointerPressed += (_, args) =>
         {
             args.Handled = true;
@@ -8641,7 +9820,7 @@ public partial class GraphEditorView : UserControl
             SelectRail(key);
 
             // 두 번 누르면 [구성] 탭의 그 간선으로 간다(셸이 데려간다).
-            if (args.ClickCount >= 2)
+            if (Clicks.IsDouble(args))
             {
                 ChoiceOpened?.Invoke(key.ChapterId, key.From, key.To, key.Label?.Trim() ?? string.Empty);
             }
@@ -8660,8 +9839,7 @@ public partial class GraphEditorView : UserControl
         MarkEdge(null);
         _selectedRail = key;
         DrawChapterRails();
-        string route = $"{EpisodeTitle(key.ChapterId, key.From)} → {EpisodeTitle(key.ChapterId, key.To)}";
-        SetHint(key.Label is { Length: > 0 } label ? $"{route} · 「{label}」" : route);
+        SetHint(null);   // ⛔ 2026-11-26까지 「A → B · 「문구」」를 아래 띠에 적었다(소유자 — 필요 없다)
         LineSelected?.Invoke(new PickedLine.Choice(key.ChapterId, key.From, key.To, key.Label));
     }
 
@@ -8766,7 +9944,7 @@ public partial class GraphEditorView : UserControl
             {
                 Width = 12,
                 Height = 12,
-                Fill = Brushes.White,
+                Fill = Skin.Surface.Brush(),
                 Stroke = SelectedLineBrush,
                 StrokeThickness = 2,
                 ZIndex = 1000,
@@ -8784,8 +9962,8 @@ public partial class GraphEditorView : UserControl
                 Padding = new Thickness(2),
                 CornerRadius = new CornerRadius(4),
                 BorderThickness = new Thickness(1),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(0x66, 0x80, 0x80, 0x80)),
-                Background = new SolidColorBrush(Color.FromArgb(0xF2, 0xF6, 0xF7, 0xFA)),
+                BorderBrush = Skin.FloatingBorder.Brush(),
+                Background = Skin.FloatingSurface.Brush(),
                 ZIndex = 1000
             };
         }

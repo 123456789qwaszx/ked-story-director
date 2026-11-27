@@ -86,6 +86,10 @@ public sealed class ColumnDockTests
             ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
             Grid columns = chapterGraph.FindControl<Grid>("BoardColumns")!;
 
+            // 끌어서는 아예 접히지 않는다 — 오른쪽 기둥에도 최소 폭이 있다(2026-11-26 소유자). 아예 접는 것은 단추로만.
+            Assert.Equal(300, columns.ColumnDefinitions[4].MinWidth);
+            Assert.Equal(320, graph.FindControl<Grid>("BoardColumns")!.ColumnDefinitions[4].MinWidth);
+
             // 사람이 끌어 둔 폭 — 펼 때 이 폭으로 돌아와야 한다.
             columns.ColumnDefinitions[4].Width = new GridLength(380);
             Dispatcher.UIThread.RunJobs();
@@ -93,6 +97,7 @@ public sealed class ColumnDockTests
             Click(chapterGraph.FindControl<Button>("FoldSideButton")!);
 
             Assert.Equal(ColumnDock.FoldedWidth, columns.ColumnDefinitions[4].Width.Value);
+            Assert.Equal(ColumnDock.FoldedWidth, columns.ColumnDefinitions[4].MinWidth);   // 접힌 동안은 띠의 폭까지 줄어든다
             Assert.False(chapterGraph.FindControl<TabControl>("SideTabs")!.IsEffectivelyVisible);
             Assert.True(chapterGraph.FindControl<Button>("SideStrip")!.IsVisible);
             Assert.False(chapterGraph.FindControl<GridSplitter>("SideSplitter")!.IsVisible);
@@ -116,6 +121,7 @@ public sealed class ColumnDockTests
             Click(graph.FindControl<Button>("SideStrip")!);
 
             Assert.Equal(380, columns.ColumnDefinitions[4].Width.Value);
+            Assert.Equal(300, columns.ColumnDefinitions[4].MinWidth);   // 펴면 최소 폭이 돌아온다
             Assert.True(chapterGraph.FindControl<GridSplitter>("SideSplitter")!.IsVisible);
             Assert.True(graph.FindControl<TabControl>("SideTabs")!.IsVisible);
             Assert.False(graph.SideDock.IsFolded);

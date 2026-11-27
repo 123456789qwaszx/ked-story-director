@@ -28,6 +28,21 @@
   <data name="Settings_LanguageRestart" xml:space="preserve">
     <value>Restart the app to switch to {0}.</value>
   </data>
+  <data name="Settings_ThemeLabel" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="Settings_ThemeTip" xml:space="preserve">
+    <value>The tool's colors and shapes — your dialogue and project data don't change. Changes take effect the next time you start the app.</value>
+  </data>
+  <data name="Settings_ThemeRestart" xml:space="preserve">
+    <value>Restart the app to switch to the “{0}” theme.</value>
+  </data>
+  <data name="Theme_ClearSky" xml:space="preserve">
+    <value>Clear sky</value>
+  </data>
+  <data name="Theme_Classic" xml:space="preserve">
+    <value>Classic</value>
+  </data>
   <data name="Main_SelectNodeToEditIt" xml:space="preserve">
     <value>Select a node to edit it here.</value>
   </data>
@@ -81,12 +96,6 @@
   </data>
   <data name="Main_RemovedOldProgressionJSONSame" xml:space="preserve">
     <value> Removed the old progression JSON '{0}' (the same file in the mirror folder is removed on the next save).</value>
-  </data>
-  <data name="Main_ChapterWillBeRemovedAlong" xml:space="preserve">
-    <value>Chapter “{0}” will be removed along with its scenes, episodes, and its cards in the [Script] tab. Undo (Ctrl+Z) brings it back.</value>
-  </data>
-  <data name="Main_DeleteChapter" xml:space="preserve">
-    <value>Delete chapter</value>
   </data>
   <data name="Main_DeletedChapterAndCardsIn" xml:space="preserve">
     <value>Deleted chapter “{0}” (and {1:card|cards} in the [Script] tab). Undo (Ctrl+Z) brings it back.</value>
@@ -249,7 +258,7 @@
     <value>The shape of choice lines (branch lines too) newly drawn on the [Script] board — existing lines stay as they are (select a line to change it from the menu on the line). A line’s “↺ Auto” also returns to this shape’s default.</value>
   </data>
   <data name="Settings_ChoiceLines" xml:space="preserve">
-    <value>Choice lines</value>
+    <value>Default choice lines</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Language</value>
@@ -809,6 +818,15 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   <data name="Board_Chapter" xml:space="preserve">
     <value>Chapter {0} ⌄</value>
   </data>
+  <data name="Board_ChapterFolded" xml:space="preserve">
+    <value>Chapter {0} ›</value>
+  </data>
+  <data name="Board_FoldedChapterLabelTip" xml:space="preserve">
+    <value>Click to select this chapter — drag right away to move the folded table. Double-click to unfold it.</value>
+  </data>
+  <data name="Board_FoldedSceneLabelTip" xml:space="preserve">
+    <value>Click to select this scene — drag right away to move the folded box. Double-click to unfold it.</value>
+  </data>
   <data name="Board_ClickToSelectEveryCard" xml:space="preserve">
     <value>Click to select every card in this chapter — drag right away to move them together. Double-click to fold it into a table; double-click the folded table to unfold it.</value>
   </data>
@@ -959,9 +977,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   <data name="Board_KeptBranchConditionLinesRestored" xml:space="preserve">
     <value>Kept the branch condition lines — restored the condition lines and moved lines written outside them inside. Change the conditions for this card in the branch section of the [Structure] tab.</value>
   </data>
-  <data name="Board_FoldedNodes" xml:space="preserve">
-    <value>Folded · {0:node|nodes} · {1}</value>
-  </data>
   <data name="Board_EmptyFile" xml:space="preserve">
     <value>Empty file</value>
   </data>
@@ -1079,9 +1094,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   <data name="Board_TextWasLeftInSlot" xml:space="preserve">
     <value> The text '{0}' was left in the slot.</value>
   </data>
-  <data name="Board_ConditionRightClickToDelete" xml:space="preserve">
-    <value>{0} — condition '{1}' → {2} · right-click to delete</value>
-  </data>
   <data name="Board_CouldnTFindChapterTo" xml:space="preserve">
     <value>Couldn't find the chapter to put the new card in.</value>
   </data>
@@ -1093,9 +1105,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   </data>
   <data name="Board_AddedEpisodeToScene" xml:space="preserve">
     <value>Added an episode to scene “{0}”.</value>
-  </data>
-  <data name="Board_IsEpisodeInChapterIts" xml:space="preserve">
-    <value>'{0}' is an episode in chapter '{1}'. Its path · test start references are deleted with it — Undo (Ctrl+Z) brings it back.</value>
   </data>
   <data name="Board_DeleteEpisode2" xml:space="preserve">
     <value>Delete episode</value>
@@ -1454,12 +1463,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   <data name="Dialogue_Speaker" xml:space="preserve">
     <value>Speaker</value>
   </data>
-  <data name="Dialogue_ChooseFromRegisteredSpeakers" xml:space="preserve">
-    <value>Choose from the registered speakers</value>
-  </data>
-  <data name="Dialogue_NoSpeakersRegisteredAddSpeakers" xml:space="preserve">
-    <value>No speakers registered — add speakers in the “Speakers” tab on the right and they'll be listed here. Until then, type in the speaker field directly.</value>
-  </data>
   <data name="Dialogue_UnknownCondition" xml:space="preserve">
     <value>Unknown condition</value>
   </data>
@@ -1738,15 +1741,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   </data>
   <data name="Side_Summary" xml:space="preserve">
     <value>Summary</value>
-  </data>
-  <data name="Side_EpisodesOfSceneAndBranch" xml:space="preserve">
-    <value>{1:episode|episodes} of scene “{0}” and {2:branch card|branch cards} called from the scene will be removed together with their cards in the [Script] tab. Undo (Ctrl+Z) restores everything.</value>
-  </data>
-  <data name="Side_EpisodesOfSceneWillBe" xml:space="preserve">
-    <value>{1:episode|episodes} of scene “{0}” will be removed together with their cards in the [Script] tab. Undo (Ctrl+Z) restores everything.</value>
-  </data>
-  <data name="Side_DeleteScene" xml:space="preserve">
-    <value>Delete scene</value>
   </data>
   <data name="Side_DeletedSceneEpisodesBranchCards" xml:space="preserve">
     <value>Deleted scene “{0}” — {1:episode|episodes}, {2:branch card|branch cards}. Undo (Ctrl+Z) brings it back.</value>
@@ -2049,7 +2043,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Condition '{0}' → '{1}' — {2:path|paths} followed.</value>
   </data>
   <data name="Side_DeletesIfItSUsed" xml:space="preserve">
-    <value>Deletes '{0}' — if it's used somewhere, it says where and refuses.</value>
+    <value>Deletes '{0}' — if it's used somewhere, shows where and asks once more.</value>
   </data>
   <data name="Side_DeleteCondition" xml:space="preserve">
     <value>Delete condition</value>
@@ -2921,7 +2915,7 @@ Chapters · scenes · episodes are added, deleted and edited in the [Script] tab
     <value>Conditions (name → expression)</value>
   </data>
   <data name="Structure_SetExpressionForEachCondition" xml:space="preserve">
-    <value>Set an expression for each condition. An expression compares a stat key with an integer, like `trust &gt;= 3` (&gt;= · &lt;= · &gt; · &lt; · ==). Join several with `;`; all must hold to pass. For yes/no stats use `key == true` · `key == false`. An empty expression is “Undecided” — it always passes and only shows a warning in the validation report. Create one by typing a name in the box below the table and pressing [＋ Add] (or Enter), then fill in the expression on its row. Rename it in the row's name box — choices using that name follow. Deleting is done in the [Script] tab. Edits apply right away and can be undone (Ctrl+Z).</value>
+    <value>Set an expression for each condition. An expression compares a stat key with an integer, like `trust &gt;= 3` (&gt;= · &lt;= · &gt; · &lt; · ==). Join several with `;`; all must hold to pass. For yes/no stats use `key == true` · `key == false`. An empty expression is “Undecided” — it always passes and only shows a warning in the validation report. Create one by typing a name in the box below the table and pressing [＋ Add] (or Enter), then fill in the expression on its row. Rename it in the row's name box — choices using that name follow. Delete it with the row's [✕] — if something uses it, it shows where and asks once more. Edits apply right away and can be undone (Ctrl+Z).</value>
   </data>
   <data name="Structure_Stats" xml:space="preserve">
     <value>Stats</value>
@@ -3023,5 +3017,93 @@ Changing it leaves existing cards as they are (cards with fitting on refit right
   </data>
   <data name="Side_UndoBringsAllBack" xml:space="preserve">
     <value>One undo (Ctrl+Z) brings everything back.</value>
+  </data>
+  <data name="Confirm_DeleteEpisode" xml:space="preserve">
+    <value>Are you sure you want to delete the episode “{0}”?</value>
+  </data>
+  <data name="Confirm_DeleteScene" xml:space="preserve">
+    <value>Are you sure you want to delete the scene “{0}”?</value>
+  </data>
+  <data name="Confirm_DeleteChapter" xml:space="preserve">
+    <value>Are you sure you want to delete the chapter “{0}”?</value>
+  </data>
+  <data name="Confirm_SceneTakesEpisodes" xml:space="preserve">
+    <value>{0:episode|episodes} will be deleted with it.</value>
+  </data>
+  <data name="Confirm_SceneTakesEpisodesAndBranches" xml:space="preserve">
+    <value>{0:episode|episodes} and {1:branch card|branch cards} will be deleted with it.</value>
+  </data>
+  <data name="Confirm_ChapterTakesAll" xml:space="preserve">
+    <value>All of its scenes and episodes will be deleted with it.</value>
+  </data>
+  <data name="Confirm_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Structure_ExpressionExamples" xml:space="preserve">
+    <value>Expression examples</value>
+  </data>
+  <data name="Structure_DetachingSetsJustThat" xml:space="preserve">
+    <value>Detaching sets only the show/unlock condition of those paths to “None” — the paths and their locked messages stay. One undo (Ctrl+Z) brings it all back.</value>
+  </data>
+  <data name="Structure_ClearDialogueConditionsFirst" xml:space="preserve">
+    <value>The tool doesn't remove condition blocks in dialogue or a branch card's entry condition — clear them in the [Script] tab first, then delete again.</value>
+  </data>
+  <data name="Structure_DetachAllAndDelete" xml:space="preserve">
+    <value>Detach all and delete</value>
+  </data>
+  <data name="Structure_DetachAndDeleteCondition" xml:space="preserve">
+    <value>Detach and delete condition</value>
+  </data>
+  <data name="Structure_DeletedConditionDetachedPaths" xml:space="preserve">
+    <value>Deleted condition '{0}' — detached it from {2:path|paths}. Undo (Ctrl+Z) brings both back.</value>
+  </data>
+  <data name="SceneColor_Menu" xml:space="preserve">
+    <value>Scene color</value>
+  </data>
+  <data name="SceneColor_Auto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="SceneColor_AutoNow" xml:space="preserve">
+    <value>Auto (now: {0})</value>
+  </data>
+  <data name="SceneColor_1" xml:space="preserve">
+    <value>Sage</value>
+  </data>
+  <data name="SceneColor_2" xml:space="preserve">
+    <value>Rose</value>
+  </data>
+  <data name="SceneColor_3" xml:space="preserve">
+    <value>Mint</value>
+  </data>
+  <data name="SceneColor_4" xml:space="preserve">
+    <value>Lime</value>
+  </data>
+  <data name="SceneColor_5" xml:space="preserve">
+    <value>Lilac</value>
+  </data>
+  <data name="SceneColor_Set" xml:space="preserve">
+    <value>Set scene '{0}' to {1}. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="SceneColor_BackToAuto" xml:space="preserve">
+    <value>Scene '{0}' is back to its automatic color.</value>
+  </data>
+  <data name="SceneColor_SetMany" xml:space="preserve">
+    <value>Set {0:scene|scenes} to {1}. One undo (Ctrl+Z) brings them all back.</value>
+  </data>
+  <data name="SceneColor_ManyBackToAuto" xml:space="preserve">
+    <value>Returned {0:scene|scenes} to automatic colors.</value>
+  </data>
+  <data name="SceneColor_ChooseRgb" xml:space="preserve">
+    <value>Choose RGB…</value>
+  </data>
+  <data name="SceneColor_ChooseRgbTip" xml:space="preserve">
+    <value>Opens the color picker — preset colors · colors used in this project · choose RGB. Choose RGB starts from the scene's current color. The board background shows the chosen color as a light see-through tint, and dots · tags use the chosen color (the tool adjusts colors that are too light or too dark so text stays readable).</value>
+  </data>
+  <data name="SceneColor_ChooserAutoTip" xml:space="preserve">
+    <value>Clears the chosen color and goes back to the automatic color.</value>
+  </data>
+  <data name="Board_AppliedToPickedCards" xml:space="preserve">
+    <value>All {0} picked cards — {1}</value>
+    <comment>GraphEditorView.axaml.cs — 여러 카드를 고른 채 카드 머리의 단추를 눌렀을 때. {0} 카드 수 · {1} 한 카드의 알림</comment>
   </data>
 </root>
