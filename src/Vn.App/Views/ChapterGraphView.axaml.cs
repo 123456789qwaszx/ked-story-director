@@ -2724,7 +2724,7 @@ public partial class ChapterGraphView : UserControl
     /// 카드 머리(칩 · 이름)의 글꼴 — <b>한글 먼저</b>(맑은 고딕 → Apple SD Gothic Neo → Noto Sans KR · CJK KR → 앱 기본). 앱 글꼴(Inter)에는 한글이
     /// 없어 한글은 시스템 글꼴로, 라틴(장면ID · EpisodeId)은 Inter로 그려졌다 — 「ID로 보기」를 켜고 끌 때마다 글꼴과 줄 높이가 바뀌었다
     /// (2026-11-18 소유자 — 「글자체자체도 다른 것 같은데」). 한글 글꼴은 라틴 글자도 그리므로 두 모드가 같은 글꼴이다. 앱 전체는 그대로다.
-    /// 테마가 본문 글꼴을 정했으면(「파스텔 하늘」 — 한글과 라틴을 함께 짠 Pretendard) 그것이다 — 틀의 글과 [구성] 카드 머리가 한 글꼴이다(2026-11-26 · 디자인 점검 1번).
+    /// 테마가 본문 글꼴을 정했으면(「맑은 하늘」 — 한글과 라틴을 함께 짠 Pretendard) 그것이다 — 틀의 글과 [구성] 카드 머리가 한 글꼴이다(2026-11-26 · 디자인 점검 1번).
     /// </summary>
     internal static FontFamily CardHeadFont =>
         Application.Current?.TryGetResource("UiFont", Avalonia.Styling.ThemeVariant.Light, out object? themed) == true && themed is FontFamily font

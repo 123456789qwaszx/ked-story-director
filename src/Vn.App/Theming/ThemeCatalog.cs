@@ -35,13 +35,13 @@ internal static class ThemeCatalog
     /// <summary>기본 테마 — 0.5.0까지의 모양. 다른 테마는 모두 이 위에 얹힌다.</summary>
     public static ThemeInfo Classic { get; } = new("classic", "Classic", () => Ui.Theme_Classic, HasControls: false);
 
-    /// <summary>파스텔 하늘.</summary>
+    /// <summary>맑은 하늘.</summary>
     public static ThemeInfo PastelSky { get; } = new("pastel-sky", "PastelSky", () => Ui.Theme_PastelSky, HasControls: true);
 
     /// <summary>설정 창에 보이는 차례.</summary>
     public static IReadOnlyList<ThemeInfo> All { get; } = [PastelSky, Classic];
 
-    /// <summary>앱 설정에 테마가 없을 때(처음 켰을 때) 서는 테마 (2026-11-26 소유자 — 파스텔 하늘).</summary>
+    /// <summary>앱 설정에 테마가 없을 때(처음 켰을 때) 서는 테마 (2026-11-26 소유자 — 맑은 하늘).</summary>
     public static ThemeInfo Default => PastelSky;
 
     /// <summary>앱 설정의 이름 → 테마. 모르는 이름 · 빈 값이면 <see cref="Default"/>.</summary>

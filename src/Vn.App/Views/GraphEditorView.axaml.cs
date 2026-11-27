@@ -1249,7 +1249,7 @@ public partial class GraphEditorView : UserControl
 
             // 이름표는 판 위의 화면 겹에 선다 — 테두리 바깥 위에 얹고, 자리 · 크기는 배율 · 스크롤을 따라 PlaceFrameLabels가 정한다(design/board-zoom.md 4절 ·
             // 2026-11-26 소유자 — 「챕터는 경계 줄 대신, 경계 바깥 아웃라인 위쪽에 얹고」). ⛔ 그 전에는 판에 서서 자리를 테마가 정했다(기본은 테두리 안쪽 왼위,
-            // 「파스텔 하늘」은 위쪽 선 위에 걸터앉음 — ChapterLabelTop).
+            // 「맑은 하늘」은 위쪽 선 위에 걸터앉음 — ChapterLabelTop).
             _frames.Add(frame);
             AddFrameLabel(new FrameLabel(label, chapter: true, area, 12 + (8 * Skin.FrameLabelGrow)));
 
@@ -3889,7 +3889,7 @@ public partial class GraphEditorView : UserControl
             Spacing = 2,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(4, -overflow, -overflow, -overflow),
-            Classes = { CardTogglesClass }   // 테마가 고른 카드 · 마우스를 올린 카드에만 보이는 손잡이(「파스텔 하늘」 · 디자인 점검 5번)
+            Classes = { CardTogglesClass }   // 테마가 고른 카드 · 마우스를 올린 카드에만 보이는 손잡이(「맑은 하늘」 · 디자인 점검 5번)
         };
         toggles.Children.Add(basePin);
         toggles.Children.Add(fitWidth);
@@ -6235,7 +6235,7 @@ public partial class GraphEditorView : UserControl
     /// <summary>지금 문구를 적고 있는 칸 — <b>테스트의 손잡이</b>이자 실제 입력칸이다.</summary>
     internal TextBox? SlotLabelBox { get; private set; }
 
-    /// <summary>안 이은 활성 칸(자동 자리 · 문구를 적은 칸)의 속이 찬 점 — 「파스텔 하늘」은 진한 회색이다(빨강은 위험 · 오류에만 쓴다).</summary>
+    /// <summary>안 이은 활성 칸(자동 자리 · 문구를 적은 칸)의 속이 찬 점 — 「맑은 하늘」은 진한 회색이다(빨강은 위험 · 오류에만 쓴다).</summary>
     internal static IBrush SlotLive => Skin.SlotLive.Brush();
 
     /// <summary>이어진 칸의 점 — 판에서는 그 칸의 길 색으로 칠한다(<see cref="LaneBrush"/>). 길 색을 모를 때만 이것(초록)이다.</summary>
@@ -6248,7 +6248,7 @@ public partial class GraphEditorView : UserControl
     /// 그 칸의 색 — <b>세 자리를 한눈에</b> 가른다 (2026-09-16 소유자). 색보다 <b>모양</b>이 먼저 말한다(2026-11-26 — 디자인 점검 2번):
     ///
     /// | 속이 빈 회색 원 | 아직 꺼져 있다 — 눌러서 켠다 |
-    /// | 속이 찬 원(켜짐 색 — 「파스텔 하늘」은 진한 회색 · 기본 테마는 붉은색) | 켜졌다 — 끌어다 놓을 수 있다 |
+    /// | 속이 찬 원(켜짐 색 — 「맑은 하늘」은 진한 회색 · 기본 테마는 붉은색) | 켜졌다 — 끌어다 놓을 수 있다 |
     /// | 속이 찬 원(그 칸의 길 색) | 이어졌다 |
     /// </summary>
     private IBrush SlotDot(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots) =>
@@ -6567,7 +6567,7 @@ public partial class GraphEditorView : UserControl
         label.PointerPressed += (_, args) => OnEdgePressed(args, label);
 
         // 선은 챕터 · 장면 테두리와 철도 <b>위</b>, 카드 아래에 깐다 — 테두리 바로 뒤(철도 다음) 자리다. ⛔ 2026-11-26까지는 맨 앞(0)에 끼워 테두리
-        // <b>밑</b>에 깔렸다: 판을 새로 지으면 테두리를 먼저 깔고 선을 그 앞에 끼우므로, 테두리가 불투명한 면을 칠하는 테마(「파스텔 하늘」의 장면 면)에서는
+        // <b>밑</b>에 깔렸다: 판을 새로 지으면 테두리를 먼저 깔고 선을 그 앞에 끼우므로, 테두리가 불투명한 면을 칠하는 테마(「맑은 하늘」의 장면 면)에서는
         // 분기 선이 장면 면에 가려 이름표만 떴다 — 카드를 조금 움직여 테두리를 다시 깔아야(테두리가 다시 맨 앞으로 간다) 보였다(소유자 — 「분기 연결선의
         // 경우 안 보이는 버그 … 약간 움직이면 그제서야 보입니다」).
         GraphCanvas.Children.Insert(Math.Min(_frames.Count + _railVisuals.Count, GraphCanvas.Children.Count), path);

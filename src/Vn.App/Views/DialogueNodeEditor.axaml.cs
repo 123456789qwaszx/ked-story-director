@@ -648,7 +648,7 @@ public partial class DialogueNodeEditor : UserControl
     /// <summary>고른 줄의 클래스 — 테마의 손잡이다.</summary>
     internal const string PickedLineClass = "picked";
 
-    /// <summary>줄마다의 화자 칸 · [+]의 클래스 — 테마가 고른 줄 · 마우스를 올린 줄에만 보인다(「파스텔 하늘」).</summary>
+    /// <summary>줄마다의 화자 칸 · [+]의 클래스 — 테마가 고른 줄 · 마우스를 올린 줄에만 보인다(「맑은 하늘」).</summary>
     internal const string LineSpeakerClass = "line-speaker";
 
     /// <inheritdoc cref="LineSpeakerClass"/>

@@ -77,7 +77,7 @@
     <Color x:Key="ChapterLabelIdle">#A06B7280</Color>
     <Color x:Key="ChapterLabelInk">#FFFFFF</Color>
     <Color x:Key="SceneFrameBorder">#5AD97706</Color>
-    <!-- 장면 바탕 — 다섯 색조를 옅게 비치게(파스텔 하늘의 점 색 · design/scene-colors.md). 겹친 자리는 한 겹 더 진하다. -->
+    <!-- 장면 바탕 — 다섯 색조를 옅게 비치게(맑은 하늘의 점 색 · design/scene-colors.md). 겹친 자리는 한 겹 더 진하다. -->
     <Color x:Key="SceneTint1">#1442815A</Color>
     <Color x:Key="SceneTint2">#149E5D77</Color>
     <Color x:Key="SceneTint3">#14138186</Color>

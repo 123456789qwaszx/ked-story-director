@@ -108,7 +108,7 @@ public sealed class ThemeTests : IDisposable
     }
 
     [Theory]
-    [InlineData(null, "pastel-sky")]       // 처음 켜면 파스텔 하늘 (2026-11-26 소유자)
+    [InlineData(null, "pastel-sky")]       // 처음 켜면 맑은 하늘 (2026-11-26 소유자)
     [InlineData("", "pastel-sky")]
     [InlineData("classic", "classic")]
     [InlineData("CLASSIC", "classic")]
@@ -286,7 +286,7 @@ public sealed class ThemeTests : IDisposable
                 window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Structure;
                 Dispatcher.UIThread.RunJobs();
 
-                // 위 띠 아래의 꾸밈 줄 — 지금은 어느 테마도 쓰지 않는다(「파스텔 하늘」의 구름 물결은 2026-11-26에 걷었다 — 높이 0으로 접힌다).
+                // 위 띠 아래의 꾸밈 줄 — 지금은 어느 테마도 쓰지 않는다(「맑은 하늘」의 구름 물결은 2026-11-26에 걷었다 — 높이 0으로 접힌다).
                 Panel edge = window.FindControl<Panel>("TopBarEdge")!;
                 Assert.Equal(0, edge.Bounds.Height);
 
@@ -379,7 +379,7 @@ public sealed class ThemeTests : IDisposable
             Assert.True(key.Kind == expected, $"{name}: 목록의 꼴 {key.Kind} ≠ {expected}");
         }
 
-        // 목록의 이름은 모두 「파스텔 하늘」에서 값이 있다 — 쓰는 곳 없는 이름 · 잘못 적은 이름이 없다. 설명은 두 언어 다 있다.
+        // 목록의 이름은 모두 「맑은 하늘」에서 값이 있다 — 쓰는 곳 없는 이름 · 잘못 적은 이름이 없다. 설명은 두 언어 다 있다.
         Application app = Application.Current!;
         ThemeInfo before = ThemeService.Current;
 
@@ -389,7 +389,7 @@ public sealed class ThemeTests : IDisposable
 
             foreach (ThemeKey key in ThemeKeys.All)
             {
-                Assert.True(app.TryGetResource(key.Name, ThemeVariant.Light, out _), $"{key.Name}: 「파스텔 하늘」에 값이 없습니다");
+                Assert.True(app.TryGetResource(key.Name, ThemeVariant.Light, out _), $"{key.Name}: 「맑은 하늘」에 값이 없습니다");
                 Assert.False(string.IsNullOrWhiteSpace(key.Korean), key.Name);
                 Assert.False(string.IsNullOrWhiteSpace(key.English), key.Name);
                 Assert.DoesNotMatch("[가-힣]", key.English);

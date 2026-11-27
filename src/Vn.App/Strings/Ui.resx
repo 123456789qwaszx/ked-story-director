@@ -45,7 +45,7 @@
     <comment>테마를 바꾼 뒤 칸 아래 · 상태줄. {0} = 바뀔 테마의 이름.</comment>
   </data>
   <data name="Theme_PastelSky" xml:space="preserve">
-    <value>파스텔 하늘</value>
+    <value>맑은 하늘</value>
     <comment>테마의 이름 — 설정 창 테마 칸(Theming/ThemeCatalog.cs).</comment>
   </data>
   <data name="Theme_Classic" xml:space="preserve">

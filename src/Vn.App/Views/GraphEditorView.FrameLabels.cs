@@ -40,7 +40,7 @@ public partial class GraphEditorView
     /// <summary>장면 이름표의 아래 끝과 장면의 첫 카드 사이(판 단위).</summary>
     private const double SceneLabelGap = 4;
 
-    /// <summary>챕터 이름표의 판 높이를 아직 못 잰 때(테두리를 긋기 전) 쓰는 값 — 「파스텔 하늘」 100%의 높이쯤(판 단위).</summary>
+    /// <summary>챕터 이름표의 판 높이를 아직 못 잰 때(테두리를 긋기 전) 쓰는 값 — 「맑은 하늘」 100%의 높이쯤(판 단위).</summary>
     private const double ChapterLabelRoomFallback = 40;
 
     /// <summary>챕터 이름표의 Tag 머리 — 뒤에 챕터 ID가 붙는다.</summary>
