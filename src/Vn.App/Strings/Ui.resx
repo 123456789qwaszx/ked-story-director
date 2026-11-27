@@ -4123,4 +4123,8 @@
     <value>고른 색을 걷고 자동 색으로 돌립니다.</value>
     <comment>SceneColorMenu.cs</comment>
   </data>
+  <data name="Board_AppliedToPickedCards" xml:space="preserve">
+    <value>고른 카드 {0}개에 함께 — {1}</value>
+    <comment>GraphEditorView.axaml.cs — 여러 카드를 고른 채 카드 머리의 단추를 눌렀을 때. {0} 카드 수 · {1} 한 카드의 알림</comment>
+  </data>
 </root>

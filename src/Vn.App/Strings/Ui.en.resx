@@ -3102,4 +3102,8 @@ Changing it leaves existing cards as they are (cards with fitting on refit right
   <data name="SceneColor_ChooserAutoTip" xml:space="preserve">
     <value>Clears the chosen color and goes back to the automatic color.</value>
   </data>
+  <data name="Board_AppliedToPickedCards" xml:space="preserve">
+    <value>All {0} picked cards — {1}</value>
+    <comment>GraphEditorView.axaml.cs — 여러 카드를 고른 채 카드 머리의 단추를 눌렀을 때. {0} 카드 수 · {1} 한 카드의 알림</comment>
+  </data>
 </root>

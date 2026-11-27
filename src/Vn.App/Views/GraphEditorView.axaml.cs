@@ -3927,7 +3927,7 @@ public partial class GraphEditorView : UserControl
         {
             args.Handled = true;
             _headerBlankPress = null;   // 단추를 누른 것은 머리 빈 곳의 첫 누름이 아니다
-            UiGuard.Run(_session, Ui.Board_BasePin, () => ToggleBasePin(nodeId));
+            UiGuard.Run(_session, Ui.Board_BasePin, () => ToggleBasePinOnPicked(nodeId));
         };
         return toggle;
     }
@@ -3954,7 +3954,7 @@ public partial class GraphEditorView : UserControl
         {
             args.Handled = true;
             _headerBlankPress = null;   // 단추를 누른 것은 머리 빈 곳의 첫 누름이 아니다 — 맞춰 줄어든 카드의 빈 곳이 그 자리에 와도 두 번 누름이 아니다
-            UiGuard.Run(_session, width ? Ui.Board_FitWidth : Ui.Board_FitHeight, () => ToggleFit(nodeId, width));
+            UiGuard.Run(_session, width ? Ui.Board_FitWidth : Ui.Board_FitHeight, () => ToggleFitOnPicked(nodeId, width));
         };
         return toggle;
     }
@@ -4013,6 +4013,74 @@ public partial class GraphEditorView : UserControl
     /// <summary>기본 크기의 글 칸 높이를 카드에 적는 값 — 가장 작은 높이와 같으면 적지 않는다(null).</summary>
     private static double? DefaultWritingHeightValue =>
         CardDefaults.WritingHeight > WritingBoxHeight ? CardDefaults.WritingHeight : null;
+
+    /// <summary>
+    /// 카드 머리의 단추(기본 크기로 고정 · 가로 · 세로 글 맞춤)가 입힐 카드들 — 누른 카드가 무리(<see cref="_multiSelected"/> · 범위로 긋거나 Alt+누름으로 모은
+    /// 것) 안이면 무리 전체(판의 차례), 아니면 그 카드 하나(2026-11-27 소유자 — 「여러개의 에피소드 노드를 드래그해서 동시에 선택한 상태에서 … 선택한 것들
+    /// 모두에게 적용이 되도록」).
+    /// </summary>
+    /// <summary>지금 무리로 고른 카드들(범위 · 이름표 · Alt+누름) — 화면 시험의 손잡이. 무리가 없으면 비었다.</summary>
+    internal IReadOnlyCollection<string> GroupedNodeIds => _multiSelected;
+
+    private List<string> PickedForButtons(string nodeId) =>
+        _multiSelected.Count > 1 && _multiSelected.Contains(nodeId)
+            ? _cards.Select(card => card.NodeId).Where(_multiSelected.Contains).Distinct(StringComparer.Ordinal).ToList()
+            : [nodeId];
+
+    /// <summary>
+    /// [기본 크기로 고정] 단추 — 무리면 무리 전체에 <b>누른 카드가 바뀌는 쪽으로</b> 맞춘다(누른 카드가 풀려 있으면 모두 고정, 고정돼 있으면 모두 풀기 — 이미
+    /// 그쪽인 카드는 그대로). 되돌리기 한 칸이다.
+    /// </summary>
+    internal void ToggleBasePinOnPicked(string nodeId)
+    {
+        List<string> targets = PickedForButtons(nodeId);
+
+        if (targets.Count <= 1 || _session?.Project.FindNode(nodeId)?.Layout is not { } clicked)
+        {
+            ToggleBasePin(nodeId);
+            return;
+        }
+
+        bool pin = !clicked.PinnedToBase;
+        _session.Editor.Batch(() =>
+        {
+            foreach (string id in targets)
+            {
+                if (_session.Project.FindNode(id)?.Layout is { } layout && layout.PinnedToBase != pin)
+                {
+                    ToggleBasePin(id);
+                }
+            }
+        });
+        _session.SetStatus(string.Format(Ui.Board_AppliedToPickedCards, targets.Count, _session.StatusMessage));
+    }
+
+    /// <summary>
+    /// [가로 · 세로 글 맞춤] 단추 — 무리면 무리 전체를 <b>누른 카드가 바뀌는 쪽으로</b> 맞춘다(켜기 · 끄기 — 이미 그쪽인 카드는 그대로). 되돌리기 한 칸이다.
+    /// </summary>
+    internal void ToggleFitOnPicked(string nodeId, bool width)
+    {
+        List<string> targets = PickedForButtons(nodeId);
+
+        if (targets.Count <= 1 || _session?.Project.FindNode(nodeId)?.Layout is not { } clicked)
+        {
+            ToggleFit(nodeId, width);
+            return;
+        }
+
+        bool on = !(width ? clicked.FitWidth : clicked.FitHeight);
+        _session.Editor.Batch(() =>
+        {
+            foreach (string id in targets)
+            {
+                if (_session.Project.FindNode(id)?.Layout is { } layout && (width ? layout.FitWidth : layout.FitHeight) != on)
+                {
+                    ToggleFit(id, width);
+                }
+            }
+        });
+        _session.SetStatus(string.Format(Ui.Board_AppliedToPickedCards, targets.Count, _session.StatusMessage));
+    }
 
     /// <summary>
     /// <b>기본 크기로 고정하고 풀기를 오간다</b>(2026-11-25 소유자 — 「노드의 머리부분 중, 제목영역이 아닌 우측 빈 공간을 더블 클릭 했을 시에, 이런 가로 세로 크기 맞춤을
@@ -7768,6 +7836,27 @@ public partial class GraphEditorView : UserControl
     private void OnCardPressed(NodeCard card, PointerPressedEventArgs args)
     {
         ReleaseWritingFocus();
+
+        // Alt+누름 = 고른 것에 더하기, Shift+누름 = 고른 것에서 빼기(2026-11-27 소유자). 끌기를 시작하지 않는다.
+        if (args.GetCurrentPoint(card.Visual).Properties.IsLeftButtonPressed &&
+            (args.KeyModifiers.HasFlag(KeyModifiers.Alt) || args.KeyModifiers.HasFlag(KeyModifiers.Shift)))
+        {
+            args.Handled = true;
+            _headerBlankPress = null;
+            _pendingBasePin = null;
+
+            if (args.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            {
+                AddToPicked(card.NodeId);
+            }
+            else
+            {
+                RemoveFromPicked(card.NodeId);
+            }
+
+            return;
+        }
+
         _session?.Select(card.NodeId);
 
         PointerPointProperties pressed = args.GetCurrentPoint(card.Visual).Properties;
@@ -7832,6 +7921,61 @@ public partial class GraphEditorView : UserControl
             position.Y - _dragStart.Y);
 
         args.Handled = true;
+    }
+
+    /// <summary>
+    /// <b>Alt+누름 — 그 카드를 고른 것에 더한다</b>(2026-11-27 소유자 — 「하나의 노드를 선택한 상태에서 Alt+ 클릭으로 다른 노드도 같이 선택될 수 있게」). 무리가
+    /// 없으면 지금 고른 카드와 함께 무리가 된다. 인스펙터는 마지막에 누른 카드다(범위로 고를 때 가장 가까운 카드를 보이는 것과 같다). 무리는 범위로 고른 것과
+    /// 같다 — 함께 끌고, 카드 머리의 단추가 모두에게 입는다.
+    /// </summary>
+    private void AddToPicked(string nodeId)
+    {
+        if (_multiSelected.Count == 0 &&
+            _session?.SelectedNodeId is { } current &&
+            !string.Equals(current, nodeId, StringComparison.Ordinal) &&
+            _cards.Any(card => string.Equals(card.NodeId, current, StringComparison.Ordinal)))
+        {
+            _multiSelected.Add(current);
+        }
+
+        if (_multiSelected.Count > 0)
+        {
+            _multiSelected.Add(nodeId);
+        }
+
+        _session?.Select(nodeId);
+        HighlightSelection();
+    }
+
+    /// <summary>
+    /// <b>Shift+누름 — 그 카드를 고른 것에서 뺀다</b>(2026-11-27 소유자 — 「Shift+클릭으로 선택한 노드 중 원하는 노드만을 선택 해제」). 인스펙터가 보이던 카드를
+    /// 뺐으면 남은 것 가운데 마지막 카드로 옮기고, 하나만 남으면 무리를 풀고 그 카드 하나를 고른 것이 된다. 무리 없이 고른 카드 하나를 빼면 아무것도 안 고른
+    /// 것이 된다. 고르지 않은 카드는 그대로다.
+    /// </summary>
+    private void RemoveFromPicked(string nodeId)
+    {
+        if (_multiSelected.Count > 1 && _multiSelected.Remove(nodeId))
+        {
+            List<string> left = _cards.Select(card => card.NodeId).Where(_multiSelected.Contains).ToList();
+
+            if (left.Count <= 1)
+            {
+                _multiSelected.Clear();
+            }
+
+            if (left.Count > 0 &&
+                (left.Count == 1 || string.Equals(_session?.SelectedNodeId, nodeId, StringComparison.Ordinal)))
+            {
+                _session?.Select(left[^1]);
+            }
+        }
+        else if (_multiSelected.Count <= 1 && string.Equals(_session?.SelectedNodeId, nodeId, StringComparison.Ordinal))
+        {
+            _multiSelected.Clear();
+            _session?.Select(null);
+        }
+
+        HighlightSelection();
     }
 
     /// <summary>무리(<see cref="_multiSelected"/>)를 함께 끌기 시작한다 — 움직임은 판이 받고(<see cref="OnCanvasPointerMoved"/>) 놓을 때 한 번 적는다.</summary>
