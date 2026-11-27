@@ -37,7 +37,7 @@
   <data name="Settings_ThemeRestart" xml:space="preserve">
     <value>Restart the app to switch to the “{0}” theme.</value>
   </data>
-  <data name="Theme_PastelSky" xml:space="preserve">
+  <data name="Theme_ClearSky" xml:space="preserve">
     <value>Clear sky</value>
   </data>
   <data name="Theme_Classic" xml:space="preserve">

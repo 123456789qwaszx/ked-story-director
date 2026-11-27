@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""테마의 선 아이콘 글꼴을 굽는다 — src/Vn.App/Themes/PastelSky/Fonts/StoryDirectorIcons.ttf (themes).
+"""테마의 선 아이콘 글꼴을 굽는다 — src/Vn.App/Themes/ClearSky/Fonts/StoryDirectorIcons.ttf (themes).
 
 화면의 아이콘(📂 ⚙ ⌂ ⑂ 📄 ⚠ …)은 글자다. PC의 글꼴이 그리면 색 · 굵기 · 크기가 제각각이라, 테마가 그 글자들의
 그림을 직접 싣는다 — 같은 굵기의 선 그림으로. 테마의 글꼴 목록(Tokens.axaml의 UiFont · DisplayFont) 끝에 이 글꼴을
@@ -15,7 +15,7 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FONTS = os.path.join(HERE, "..", "src", "Vn.App", "Themes", "PastelSky", "Fonts")
+FONTS = os.path.join(HERE, "..", "src", "Vn.App", "Themes", "ClearSky", "Fonts")
 BODY = os.path.join(FONTS, "NanumGothic-Regular.ttf")   # 줄 높이를 본문 글꼴과 맞춘다
 OUT = os.path.join(FONTS, "StoryDirectorIcons.ttf")
 

@@ -44,7 +44,7 @@
     <value>다시 켜면 「{0}」 테마로 바뀝니다.</value>
     <comment>테마를 바꾼 뒤 칸 아래 · 상태줄. {0} = 바뀔 테마의 이름.</comment>
   </data>
-  <data name="Theme_PastelSky" xml:space="preserve">
+  <data name="Theme_ClearSky" xml:space="preserve">
     <value>맑은 하늘</value>
     <comment>테마의 이름 — 설정 창 테마 칸(Theming/ThemeCatalog.cs).</comment>
   </data>

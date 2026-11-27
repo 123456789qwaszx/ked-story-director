@@ -230,7 +230,7 @@ internal static class AppSettingsService
     }
 
     /// <summary>
-    /// 툴의 테마 (설정 창 「기타」의 테마 칸 — themes · <see cref="Theming.ThemeCatalog"/>) — 테마의 이름(「pastel-sky」 · 「classic」), null이면
+    /// 툴의 테마 (설정 창 「기타」의 테마 칸 — themes · <see cref="Theming.ThemeCatalog"/>) — 테마의 이름(「clear-sky」 · 「classic」), null이면
     /// 처음 테마(<see cref="Theming.ThemeCatalog.Default"/>). 다시 켤 때 반영한다.
     /// </summary>
     public static string? LoadTheme() => Theming.ThemeCatalog.Normalize(Load(SettingsPath).Theme);

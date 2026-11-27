@@ -25,7 +25,7 @@ internal sealed record ThemeInfo(string Id, string Folder, Func<string> Name, bo
 /// <b>고를 수 있는 테마의 목록</b>(2026-11-26 · themes). 테마를 하나 더하려면:
 /// <list type="number">
 /// <item><c>Themes/{새 폴더}/Tokens.axaml</c>을 만든다 — <c>Themes/Classic/Tokens.axaml</c>에서 바꾸고 싶은 이름만 옮겨 값을 고친다.</item>
-/// <item>(바라면) <c>Controls.axaml</c>에 컨트롤의 모양 · 글꼴을 적는다 — <c>Themes/PastelSky/Controls.axaml</c>이 본보기다.</item>
+/// <item>(바라면) <c>Controls.axaml</c>에 컨트롤의 모양 · 글꼴을 적는다 — <c>Themes/ClearSky/Controls.axaml</c>이 본보기다.</item>
 /// <item><see cref="All"/>에 한 줄, 문구 표(<c>Ui.resx</c> · <c>Ui.en.resx</c>)에 이름 한 줄을 더한다.</item>
 /// </list>
 /// 설정 창의 테마 칸과 시험(<c>ThemeTests</c>)은 이 목록을 돌므로 따로 고칠 것이 없다. 바꿀 수 있는 이름의 목록은 <see cref="ThemeKeys"/>다.
@@ -36,13 +36,13 @@ internal static class ThemeCatalog
     public static ThemeInfo Classic { get; } = new("classic", "Classic", () => Ui.Theme_Classic, HasControls: false);
 
     /// <summary>맑은 하늘.</summary>
-    public static ThemeInfo PastelSky { get; } = new("pastel-sky", "PastelSky", () => Ui.Theme_PastelSky, HasControls: true);
+    public static ThemeInfo ClearSky { get; } = new("clear-sky", "ClearSky", () => Ui.Theme_ClearSky, HasControls: true);
 
     /// <summary>설정 창에 보이는 차례.</summary>
-    public static IReadOnlyList<ThemeInfo> All { get; } = [PastelSky, Classic];
+    public static IReadOnlyList<ThemeInfo> All { get; } = [ClearSky, Classic];
 
     /// <summary>앱 설정에 테마가 없을 때(처음 켰을 때) 서는 테마 (2026-11-26 소유자 — 맑은 하늘).</summary>
-    public static ThemeInfo Default => PastelSky;
+    public static ThemeInfo Default => ClearSky;
 
     /// <summary>앱 설정의 이름 → 테마. 모르는 이름 · 빈 값이면 <see cref="Default"/>.</summary>
     public static ThemeInfo Resolve(string? id) => Find(id) ?? Default;
@@ -50,8 +50,21 @@ internal static class ThemeCatalog
     /// <summary>아는 이름이면 그 이름(목록의 표기대로), 아니면 null — 앱 설정에 모르는 이름을 남기지 않는다.</summary>
     public static string? Normalize(string? id) => Find(id)?.Id;
 
-    private static ThemeInfo? Find(string? id) =>
-        string.IsNullOrWhiteSpace(id)
-            ? null
-            : All.FirstOrDefault(theme => string.Equals(theme.Id, id.Trim(), StringComparison.OrdinalIgnoreCase));
+    /// <summary>
+    /// 예전 이름 → 지금 이름. 「맑은 하늘」은 처음에 「파스텔 하늘」(<c>pastel-sky</c>)이었다(2026-11-27 소유자 — 이름 · 폴더 · 코드의 키까지 바꿨다). 그 이름을
+    /// 골라 둔 설정도 같은 테마로 열고, <see cref="Normalize"/>가 지금 이름으로 고쳐 적는다.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string> Renamed =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["pastel-sky"] = "clear-sky" };
+
+    private static ThemeInfo? Find(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return null;
+        }
+
+        string name = Renamed.TryGetValue(id.Trim(), out string? now) ? now : id.Trim();
+        return All.FirstOrDefault(theme => string.Equals(theme.Id, name, StringComparison.OrdinalIgnoreCase));
+    }
 }

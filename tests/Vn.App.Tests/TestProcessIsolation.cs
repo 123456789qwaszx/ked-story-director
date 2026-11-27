@@ -47,7 +47,7 @@ internal static class TestProcessIsolation
         UiLanguage.Apply(UiLanguage.Korean);
 
         // 화면 시험은 기본 테마(클래식)의 모양 · 색을 잰다 — 앱의 처음 테마(맑은 하늘)와 따로다. 다른 테마로 전체를 돌려 보려면
-        // 환경 변수 VN_TEST_THEME에 테마 이름을 준다(예: pastel-sky — 색을 재는 시험은 그때 어긋난다 · themes).
+        // 환경 변수 VN_TEST_THEME에 테마 이름을 준다(예: clear-sky — 색을 재는 시험은 그때 어긋난다 · themes).
         Theming.ThemeService.StartupThemeOverride =
             Environment.GetEnvironmentVariable("VN_TEST_THEME") is { Length: > 0 } theme ? theme : Theming.ThemeCatalog.Classic.Id;
 

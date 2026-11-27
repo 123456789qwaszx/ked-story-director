@@ -3,11 +3,11 @@
 툴의 색 · 모서리 · 컨트롤 모양 · 글꼴은 **테마**가 정한다. 테마는 `src/Vn.App/Themes/` 아래 **폴더 하나**이고, [⚙ 설정] → 「기타」 →
 「테마」에서 고른다. 고른 테마는 앱 설정에 들고 **다시 켤 때** 선다(화면 언어와 같다). 처음 테마는 「맑은 하늘」이다.
 
-> 2026-11-27 소유자 — 처음 이름은 「파스텔 하늘」이었다. 써 보니 파스텔이라기엔 단정하고 정석적이라 기본 테마답게 「맑은 하늘」(Clear sky)로 바꿨다. 설정에 드는 이름(`pastel-sky`) · 폴더(`Themes/PastelSky/`) · 코드의 `PastelSky`는 그대로다 — 이미 고른 설정이 그대로 열린다.
+> 2026-11-27 소유자 — 처음 이름은 「파스텔 하늘」이었다. 써 보니 파스텔이라기엔 단정하고 정석적이라 기본 테마답게 「맑은 하늘」(Clear sky)로 바꿨다. 설정에 드는 이름도 `pastel-sky` → `clear-sky`, 폴더도 `Themes/PastelSky/` → `Themes/ClearSky/`, 코드의 키도 `PastelSky` → `ClearSky`로 바꿨다. 예전 이름을 골라 둔 설정은 같은 테마로 열리고 지금 이름으로 고쳐 적힌다(`ThemeCatalog`의 예전 이름 표).
 
 | 테마 | 이름(앱 설정) | 폴더 | 무엇 |
 |---|---|---|---|
-| 맑은 하늘 | `pastel-sky` | `Themes/PastelSky/` | 점이 박힌 회청색 책상 · 그 위에 떠 있는 흰 챕터 종이 · 장면마다 다섯 옅은 색 가운데 하나의 장면 쟁반 · 흰 카드 · 먹색 이름표 · 고름은 윈도우의 강조색 파랑 · 글꼴은 Pretendard(챕터 · 장면 이름표만 Jua Story Director) |
+| 맑은 하늘 | `clear-sky` | `Themes/ClearSky/` | 점이 박힌 회청색 책상 · 그 위에 떠 있는 흰 챕터 종이 · 장면마다 다섯 옅은 색 가운데 하나의 장면 쟁반 · 흰 카드 · 먹색 이름표 · 고름은 윈도우의 강조색 파랑 · 글꼴은 Pretendard(챕터 · 장면 이름표만 Jua Story Director) |
 | 기본 | `classic` | `Themes/Classic/` | 0.5.0까지의 모양 그대로. **모든 테마의 밑바탕**이다 |
 
 ## 1. 짜임
@@ -21,9 +21,9 @@ src/Vn.App/
     ThemeService.cs   테마를 앱에 입힌다(켤 때 한 번)
   Themes/
     Classic/Tokens.axaml        모든 이름의 값(기본)
-    PastelSky/Tokens.axaml      바꾸는 이름의 값 + 틀의 꾸밈 + Fluent 컨트롤 색
-    PastelSky/Controls.axaml    컨트롤의 모양 · 글꼴(스타일)
-    PastelSky/Fonts/*.ttf       테마가 싣는 글꼴
+    ClearSky/Tokens.axaml      바꾸는 이름의 값 + 틀의 꾸밈 + Fluent 컨트롤 색
+    ClearSky/Controls.axaml    컨트롤의 모양 · 글꼴(스타일)
+    ClearSky/Fonts/*.ttf       테마가 싣는 글꼴
 ```
 
 - **테마는 기본 테마 위에 얹힌다.** `ThemeService`가 `Classic/Tokens.axaml`을 늘 깔고, 고른 테마의 `Tokens.axaml`을 그 위에 더한다(뒤에 더한 것이
@@ -59,7 +59,7 @@ src/Vn.App/
 ## 2. 새 테마 더하기
 
 1. `Themes/{새 폴더}/Tokens.axaml`을 만든다. `Classic/Tokens.axaml`에서 바꾸고 싶은 줄만 옮겨 값을 고친다(전부 옮겨도 된다).
-   컨트롤 색을 바꾸려면 `PastelSky/Tokens.axaml` 아래쪽의 Fluent 이름들을 본보기로 삼는다.
+   컨트롤 색을 바꾸려면 `ClearSky/Tokens.axaml` 아래쪽의 Fluent 이름들을 본보기로 삼는다.
 2. (바라면) `Controls.axaml`에 컨트롤의 모양 · 글꼴을 적는다. 글꼴 파일은 `Fonts/`에 두면 함께 실린다(`Vn.App.csproj`가 `Themes/**/Fonts/*.ttf`를
    싣는다) — **라이선스를 `THIRD-PARTY-NOTICES.txt`에 옮긴다.**
 3. `Theming/ThemeCatalog.cs`의 `All`에 한 줄을 더한다 — `new("이름", "폴더", () => Ui.Theme_이름, HasControls: true/false)`.
@@ -83,7 +83,7 @@ src/Vn.App/
 - **화면 시험 전체는 기본 테마로 돈다**(`TestProcessIsolation` — 색 · 치수를 재는 시험의 기준이 기본 테마다). 다른 테마로 전체를 돌려 보려면
   환경 변수 `VN_TEST_THEME`에 테마 이름을 준다 — 색 · 치수를 재는 시험은 그때 어긋나는 것이 정상이고, **터지는 시험**(예외)이 없는지를 본다.
 - 그림으로 보기 — `UiTextFitProbe`(docs/ui-text.md 1절)에 `VN_TEST_THEME`을 함께 주면 그 테마로 주요 화면을 그린다:
-  `$env:VN_UI_PROBE="ko"; $env:VN_TEST_THEME="pastel-sky"; dotnet test tests/Vn.App.Tests --filter "FullyQualifiedName~UiTextFitProbe"`.
+  `$env:VN_UI_PROBE="ko"; $env:VN_TEST_THEME="clear-sky"; dotnet test tests/Vn.App.Tests --filter "FullyQualifiedName~UiTextFitProbe"`.
 
 ## 5. 이름의 목록 — 나중에 테마를 고치는 기능을 위해
 
@@ -103,7 +103,7 @@ src/Vn.App/
 ## 6. 아이콘
 
 화면의 아이콘(📂 ⚙ ⌂ ⑂ 📄 ⚠ ✕ ↪ …)은 그림이 아니라 **글자**다(문구 표 · 코드에 글자로 적혀 있다). PC의 글꼴이 그리면 색 · 굵기 · 크기가 PC마다
-다르고 테마의 색을 따르지 않는다. 그래서 「맑은 하늘」은 그 글자들의 그림을 **아이콘 글꼴**(`Themes/PastelSky/Fonts/StoryDirectorIcons.ttf` —
+다르고 테마의 색을 따르지 않는다. 그래서 「맑은 하늘」은 그 글자들의 그림을 **아이콘 글꼴**(`Themes/ClearSky/Fonts/StoryDirectorIcons.ttf` —
 이 저장소가 만든 것)로 싣는다. 테마의 글꼴 목록(`UiFont` · `DisplayFont` · `FrameFont`)의 **끝**에 두면, 본문 글꼴에 없는 그 글자들만 여기서 그려진다 — 글자색과
 글자 크기를 그대로 따르고, 화면 코드와 문구 표는 테마와 상관없이 같다. 기본 테마는 전처럼 PC의 글꼴이 그린다.
 

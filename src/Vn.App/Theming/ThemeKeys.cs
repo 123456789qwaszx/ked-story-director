@@ -76,7 +76,7 @@ internal sealed record ThemeKey(string Name, ThemeValueKind Kind, ThemeKeyGroup 
 /// <summary>
 /// <b>테마가 정하는 이름의 목록</b>(2026-11-26 · themes) — 이름(리소스 키) · 값의 꼴 · 묶음 · 무엇인지(두 언어)를 한 곳에 모은다. 나중에 테마를 고치는 기능을
 /// 더할 때 이 목록을 돈다(2026-11-26 소유자 — 「차후에 원한다면 테마 편집 관련 기능을 추가할 수 있도록 이름과 목록을 한 군데에 모아두는 정리만」).
-/// <see cref="Skin"/>(코드가 쓰는 이름)은 모두 여기 있어야 하고, 그 밖은 XAML만 쓰는 이름(<c>Themes/PastelSky/Tokens.axaml</c> · Fluent 테마의 이름)이다.
+/// <see cref="Skin"/>(코드가 쓰는 이름)은 모두 여기 있어야 하고, 그 밖은 XAML만 쓰는 이름(<c>Themes/ClearSky/Tokens.axaml</c> · Fluent 테마의 이름)이다.
 /// <c>ThemeTests</c>가 이 목록과 테마가 맞는지 본다.
 ///
 /// 이름을 더하려면: 테마의 Tokens.axaml에 값 · 여기 한 줄(꼴 · 묶음 · 설명 두 언어). 설명은 화면 어디에 보이는지를 말한다 — 코드의 낱말이 아니라.

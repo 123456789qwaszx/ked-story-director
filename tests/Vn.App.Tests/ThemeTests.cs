@@ -108,12 +108,13 @@ public sealed class ThemeTests : IDisposable
     }
 
     [Theory]
-    [InlineData(null, "pastel-sky")]       // 처음 켜면 맑은 하늘 (2026-11-26 소유자)
-    [InlineData("", "pastel-sky")]
+    [InlineData(null, "clear-sky")]       // 처음 켜면 맑은 하늘 (2026-11-26 소유자)
+    [InlineData("", "clear-sky")]
     [InlineData("classic", "classic")]
     [InlineData("CLASSIC", "classic")]
-    [InlineData("pastel-sky", "pastel-sky")]
-    [InlineData("없는 테마", "pastel-sky")]   // 모르는 이름은 처음 테마
+    [InlineData("clear-sky", "clear-sky")]
+    [InlineData("pastel-sky", "clear-sky")]   // 예전 이름(2026-11-27까지 「파스텔 하늘」)도 같은 테마로 연다
+    [InlineData("없는 테마", "clear-sky")]   // 모르는 이름은 처음 테마
     public void 앱_설정의_이름으로_테마를_고른다(string? setting, string expected) =>
         Assert.Equal(expected, ThemeCatalog.Resolve(setting).Id);
 
@@ -160,7 +161,7 @@ public sealed class ThemeTests : IDisposable
                 Assert.Equal(Skin.Selection, Assert.IsType<Color>(selection));
             }
 
-            ThemeService.Apply(app, ThemeCatalog.PastelSky);
+            ThemeService.Apply(app, ThemeCatalog.ClearSky);
             Assert.NotEqual(Color.Parse("#2563EB"), Skin.Selection);
             Assert.True(app.TryGetResource("TopBarBackground", ThemeVariant.Light, out _));
 
@@ -385,7 +386,7 @@ public sealed class ThemeTests : IDisposable
 
         try
         {
-            ThemeService.Apply(app, ThemeCatalog.PastelSky);
+            ThemeService.Apply(app, ThemeCatalog.ClearSky);
 
             foreach (ThemeKey key in ThemeKeys.All)
             {
@@ -405,7 +406,7 @@ public sealed class ThemeTests : IDisposable
     public void 컨트롤_모양_파일에는_색을_숫자로_적지_않는다()
     {
         // 색은 모두 Tokens.axaml에 이름으로 — 이름의 목록(ThemeKeys) 하나로 모든 색을 고칠 수 있게(2026-11-26).
-        string controls = File.ReadAllText(Path.Combine(ThemesFolder, "PastelSky", "Controls.axaml"));
+        string controls = File.ReadAllText(Path.Combine(ThemesFolder, "ClearSky", "Controls.axaml"));
         Assert.Empty(System.Text.RegularExpressions.Regex.Matches(controls, "#[0-9A-Fa-f]{3,8}\\b"));
     }
 

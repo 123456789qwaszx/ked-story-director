@@ -13,7 +13,7 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "..", "src", "Vn.App", "Themes", "PastelSky", "Fonts", "JuaStoryDirector-Regular.ttf")
+OUT = os.path.join(HERE, "..", "src", "Vn.App", "Themes", "ClearSky", "Fonts", "JuaStoryDirector-Regular.ttf")
 FAMILY = "Jua Story Director"
 
 

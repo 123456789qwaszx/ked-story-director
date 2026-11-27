@@ -237,9 +237,9 @@
          제목 글꼴(DisplayFont)도 Pretendard다 — 굵기(SemiBold)는 컨트롤 모양(Controls.axaml)이 정한다.
          말랑한 Jua는 챕터 · 장면 이름표(FrameFont)에만 남긴다 — Jua Story Director(Jua에 말줄임표를 더한 판 — tools/patch-jua-ellipsis.py)이고, Jua에 없는 한글은
          나눔고딕이 그린다. -->
-    <FontFamily x:Key="UiFont">avares://StoryDirector/Themes/PastelSky/Fonts#Pretendard, fonts:Inter#Inter, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
-    <FontFamily x:Key="DisplayFont">avares://StoryDirector/Themes/PastelSky/Fonts#Pretendard, fonts:Inter#Inter, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
-    <FontFamily x:Key="FrameFont">avares://StoryDirector/Themes/PastelSky/Fonts#Jua Story Director, avares://StoryDirector/Themes/PastelSky/Fonts#NanumGothic, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
+    <FontFamily x:Key="UiFont">avares://StoryDirector/Themes/ClearSky/Fonts#Pretendard, fonts:Inter#Inter, avares://StoryDirector/Themes/ClearSky/Fonts#Story Director Icons</FontFamily>
+    <FontFamily x:Key="DisplayFont">avares://StoryDirector/Themes/ClearSky/Fonts#Pretendard, fonts:Inter#Inter, avares://StoryDirector/Themes/ClearSky/Fonts#Story Director Icons</FontFamily>
+    <FontFamily x:Key="FrameFont">avares://StoryDirector/Themes/ClearSky/Fonts#Jua Story Director, avares://StoryDirector/Themes/ClearSky/Fonts#NanumGothic, avares://StoryDirector/Themes/ClearSky/Fonts#Story Director Icons</FontFamily>
 
     <!-- ─────────────────────────────────────────────────────────────────────────
          컨트롤의 색 · 모서리 — Fluent 테마가 쓰는 이름을 덮는다(단추 · 글 칸 · 고르기 칸 · 탭 · 풍선 · 메뉴).
