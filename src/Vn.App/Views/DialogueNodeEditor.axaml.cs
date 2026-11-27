@@ -1248,6 +1248,7 @@ public partial class DialogueNodeEditor : UserControl
         BranchConditionHost.Children.Clear();
         BranchConditionHost.IsVisible =
             _session is not null && node.IsBranchCard;
+        RemeasureUpward(BranchConditionHost);
 
         if (_session is null || !BranchConditionHost.IsVisible)
         {
@@ -1281,6 +1282,25 @@ public partial class DialogueNodeEditor : UserControl
         });
     }
 
+
+    /// <summary>
+    /// 그 칸부터 이 편집기까지 다시 재게 한다(2026-11-27 소유자 — 분기 카드를 고르면 「종종」 조건 칸의 설명 · [줄 추가] 줄이 위로 밀려 조건 칸에 겹쳤다:
+    /// 위쪽 칸(Grid의 Auto 줄)이 조건 칸이 없던 때의 높이를 그대로 썼다). 칸의 아이를 갈고 보이기를 바꾸면 Avalonia는 그 칸만 다시 잴 차례에 넣는데, 그
+    /// 차례가 오기 전(편집기나 그 조상이 안 보이던 사이 등)에 바깥 칸이 예전 크기로 이미 재여 있으면 위쪽 줄의 높이가 낡은 채 남는다. 조상까지 「다시 재라」를
+    /// 함께 걸어 두면 다음 배치에서 반드시 새로 잰다 — 값싼 일이다.
+    /// </summary>
+    private void RemeasureUpward(Layoutable from)
+    {
+        for (Visual? visual = from; visual is not null; visual = visual.GetVisualParent())
+        {
+            (visual as Layoutable)?.InvalidateMeasure();
+
+            if (ReferenceEquals(visual, this))
+            {
+                break;
+            }
+        }
+    }
 
     /// <summary>그 줄의 「조건 분기」 카드 하나가 지는 표(줄과 다녀갈 카드) — 화면 테스트가 이것으로 찾는다.</summary>
     internal static string BranchMarkerTag(string lineId, string targetId) =>
