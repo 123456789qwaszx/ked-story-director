@@ -4015,11 +4015,11 @@ public partial class GraphEditorView : UserControl
         CardDefaults.WritingHeight > WritingBoxHeight ? CardDefaults.WritingHeight : null;
 
     /// <summary>
-    /// 카드 머리의 단추(기본 크기로 고정 · 가로 · 세로 글 맞춤)가 입힐 카드들 — 누른 카드가 무리(<see cref="_multiSelected"/> · 범위로 긋거나 Alt+누름으로 모은
+    /// 카드 머리의 단추(기본 크기로 고정 · 가로 · 세로 글 맞춤)가 입힐 카드들 — 누른 카드가 무리(<see cref="_multiSelected"/> · 범위로 긋거나 Ctrl+누름으로 모은
     /// 것) 안이면 무리 전체(판의 차례), 아니면 그 카드 하나(2026-11-27 소유자 — 「여러개의 에피소드 노드를 드래그해서 동시에 선택한 상태에서 … 선택한 것들
     /// 모두에게 적용이 되도록」).
     /// </summary>
-    /// <summary>지금 무리로 고른 카드들(범위 · 이름표 · Alt+누름) — 화면 시험의 손잡이. 무리가 없으면 비었다.</summary>
+    /// <summary>지금 무리로 고른 카드들(범위 · 이름표 · Ctrl+누름) — 화면 시험의 손잡이. 무리가 없으면 비었다.</summary>
     internal IReadOnlyCollection<string> GroupedNodeIds => _multiSelected;
 
     private List<string> PickedForButtons(string nodeId) =>
@@ -7837,21 +7837,22 @@ public partial class GraphEditorView : UserControl
     {
         ReleaseWritingFocus();
 
-        // Alt+누름 = 고른 것에 더하기, Shift+누름 = 고른 것에서 빼기(2026-11-27 소유자). 끌기를 시작하지 않는다.
+        // Ctrl+누름 = 고른 것에 더하고, 이미 고른 카드면 뺀다(2026-11-27 소유자 — 「Ctrl+클릭으로 더하기 … 이미 선택된 것을 다시 Ctrl+클릭을 할 경우 그 경우에는
+        // 선택대상에서 빼지는 방식」 · ⛔ 같은 날 처음에는 Alt로 더하고 Shift로 뺐다). macOS의 ⌘도 같다. 끌기를 시작하지 않는다.
         if (args.GetCurrentPoint(card.Visual).Properties.IsLeftButtonPressed &&
-            (args.KeyModifiers.HasFlag(KeyModifiers.Alt) || args.KeyModifiers.HasFlag(KeyModifiers.Shift)))
+            (args.KeyModifiers.HasFlag(KeyModifiers.Control) || args.KeyModifiers.HasFlag(KeyModifiers.Meta)))
         {
             args.Handled = true;
             _headerBlankPress = null;
             _pendingBasePin = null;
 
-            if (args.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            if (IsPicked(card.NodeId))
             {
-                AddToPicked(card.NodeId);
+                RemoveFromPicked(card.NodeId);
             }
             else
             {
-                RemoveFromPicked(card.NodeId);
+                AddToPicked(card.NodeId);
             }
 
             return;
@@ -7923,8 +7924,14 @@ public partial class GraphEditorView : UserControl
         args.Handled = true;
     }
 
+    /// <summary>그 카드가 지금 고른 것인가 — 무리 안이거나, 무리 없이 고른 카드 하나다.</summary>
+    private bool IsPicked(string nodeId) =>
+        _multiSelected.Count > 1
+            ? _multiSelected.Contains(nodeId)
+            : string.Equals(_session?.SelectedNodeId, nodeId, StringComparison.Ordinal);
+
     /// <summary>
-    /// <b>Alt+누름 — 그 카드를 고른 것에 더한다</b>(2026-11-27 소유자 — 「하나의 노드를 선택한 상태에서 Alt+ 클릭으로 다른 노드도 같이 선택될 수 있게」). 무리가
+    /// <b>Ctrl+누름(고르지 않은 카드) — 그 카드를 고른 것에 더한다</b>(2026-11-27 소유자 — 「하나의 노드를 선택한 상태에서 … 다른 노드도 같이 선택」). 무리가
     /// 없으면 지금 고른 카드와 함께 무리가 된다. 인스펙터는 마지막에 누른 카드다(범위로 고를 때 가장 가까운 카드를 보이는 것과 같다). 무리는 범위로 고른 것과
     /// 같다 — 함께 끌고, 카드 머리의 단추가 모두에게 입는다.
     /// </summary>
@@ -7948,9 +7955,9 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// <b>Shift+누름 — 그 카드를 고른 것에서 뺀다</b>(2026-11-27 소유자 — 「Shift+클릭으로 선택한 노드 중 원하는 노드만을 선택 해제」). 인스펙터가 보이던 카드를
+    /// <b>Ctrl+누름(이미 고른 카드) — 그 카드를 고른 것에서 뺀다</b>(2026-11-27 소유자 — 「선택한 노드 중 원하는 노드만을 선택 해제」). 인스펙터가 보이던 카드를
     /// 뺐으면 남은 것 가운데 마지막 카드로 옮기고, 하나만 남으면 무리를 풀고 그 카드 하나를 고른 것이 된다. 무리 없이 고른 카드 하나를 빼면 아무것도 안 고른
-    /// 것이 된다. 고르지 않은 카드는 그대로다.
+    /// 것이 된다.
     /// </summary>
     private void RemoveFromPicked(string nodeId)
     {

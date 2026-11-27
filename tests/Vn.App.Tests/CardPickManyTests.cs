@@ -14,8 +14,8 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>여러 카드를 함께 고르고 함께 바꾼다</b>(2026-11-27 소유자 — 「여러개의 에피소드 노드를 드래그해서 동시에 선택한 상태에서, '기본 크기로 고정', '가로 글 맞춤',
-/// '세로 글 맞춤' 기능을 쓸 경우 선택한 것들 모두에게 적용」 · 「하나의 노드를 선택한 상태에서 Alt+ 클릭으로 다른 노드도 같이 선택」 · 「Shift+클릭으로 선택한
-/// 노드 중 원하는 노드만을 선택 해제」). 카드는 위에서 아래로 root(0,0) · a(0,400) · b(0,800)이다.
+/// '세로 글 맞춤' 기능을 쓸 경우 선택한 것들 모두에게 적용」 · 「하나의 노드를 선택한 상태에서 … 클릭으로 다른 노드도 같이 선택」 → 같은 날 「Ctrl+클릭으로 더하기 …
+/// 이미 선택된 것을 다시 Ctrl+클릭을 할 경우 그 경우에는 선택대상에서 빼지는 방식」). 카드는 위에서 아래로 root(0,0) · a(0,400) · b(0,800)이다.
 /// </summary>
 public sealed class CardPickManyTests : IDisposable
 {
@@ -81,7 +81,7 @@ public sealed class CardPickManyTests : IDisposable
     });
 
     [Fact]
-    public void Alt로_누르면_고른_것에_더하고_Shift로_누르면_그_카드만_뺀다() => HeadlessUi.Run(() =>
+    public void Ctrl로_누르면_고른_것에_더하고_이미_고른_카드를_Ctrl로_누르면_그_카드만_뺀다() => HeadlessUi.Run(() =>
     {
         (AuthoringSession session, GraphEditorView graph) = Show();
         string a = CardId(session, "a");
@@ -91,11 +91,11 @@ public sealed class CardPickManyTests : IDisposable
         session.Select(root);
         Settle(graph);
 
-        // Alt+누름 — 지금 고른 root와 함께 무리가 된다. 인스펙터는 마지막에 누른 카드다. 끌기는 시작하지 않는다.
-        PressCard(graph, a, KeyModifiers.Alt);
+        // Ctrl+누름(고르지 않은 카드) — 지금 고른 root와 함께 무리가 된다. 인스펙터는 마지막에 누른 카드다. 끌기는 시작하지 않는다.
+        PressCard(graph, a, KeyModifiers.Control);
         Assert.Equal(new[] { a, root }.Order(StringComparer.Ordinal), Sorted(graph));
         Assert.Equal(a, session.SelectedNodeId);
-        PressCard(graph, b, KeyModifiers.Alt);
+        PressCard(graph, b, KeyModifiers.Control);
         Assert.Equal(new[] { a, b, root }.Order(StringComparer.Ordinal), Sorted(graph));
         Assert.All([a, b, root], id => Assert.Equal(2, Card(graph, id).BorderThickness.Left));
 
@@ -104,28 +104,30 @@ public sealed class CardPickManyTests : IDisposable
         Settle(graph);
         Assert.All([a, b, root], id => Assert.True(Layout(session, id).PinnedToBase));
 
-        // Shift+누름 — 그 카드만 뺀다. 인스펙터가 보이던 카드(b)를 빼면 남은 것 가운데 마지막으로 옮긴다.
-        PressCard(graph, b, KeyModifiers.Shift);
+        // 이미 고른 카드를 Ctrl+누름 — 그 카드만 뺀다. 인스펙터가 보이던 카드(b)를 빼면 남은 것 가운데 마지막으로 옮긴다.
+        PressCard(graph, b, KeyModifiers.Control);
         Assert.Equal(new[] { a, root }.Order(StringComparer.Ordinal), Sorted(graph));
         Assert.NotEqual(b, session.SelectedNodeId);
         Assert.Equal(1, Card(graph, b).BorderThickness.Left);
 
         // 하나만 남으면 무리를 풀고 그 카드 하나를 고른 것이 된다.
-        PressCard(graph, a, KeyModifiers.Shift);
+        PressCard(graph, a, KeyModifiers.Control);
         Assert.Empty(graph.GroupedNodeIds);
         Assert.Equal(root, session.SelectedNodeId);
         Assert.Equal(1, Card(graph, a).BorderThickness.Left);
 
-        // 고르지 않은 카드를 Shift로 눌러도 그대로다. 고른 카드 하나를 빼면 아무것도 안 고른 것이 된다.
-        PressCard(graph, b, KeyModifiers.Shift);
-        Assert.Equal(root, session.SelectedNodeId);
-        PressCard(graph, root, KeyModifiers.Shift);
+        // 홀로 고른 카드를 Ctrl+누르면 아무것도 안 고른 것이 된다. 그 상태에서 Ctrl+누르면 그 카드 하나를 고른다.
+        PressCard(graph, root, KeyModifiers.Control);
         Assert.Null(session.SelectedNodeId);
-
-        // 아무것도 안 고른 채 Alt로 누르면 그 카드 하나를 고른다.
-        PressCard(graph, a, KeyModifiers.Alt);
+        PressCard(graph, a, KeyModifiers.Control);
         Assert.Equal(a, session.SelectedNodeId);
         Assert.Empty(graph.GroupedNodeIds);
+
+        // Shift · Alt는 따로 하는 일이 없다 — 보통 누름처럼 그 카드 하나를 고른다.
+        PressCard(graph, b, KeyModifiers.Control);
+        PressCard(graph, root, KeyModifiers.Shift);
+        Assert.Empty(graph.GroupedNodeIds);
+        Assert.Equal(root, session.SelectedNodeId);
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
